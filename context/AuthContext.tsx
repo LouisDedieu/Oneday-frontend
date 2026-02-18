@@ -32,9 +32,9 @@ interface AuthContextType {
   clearPasswordRecovery: () => void;
 }
 
-const TEST_MODE = true;
-const TEST_USER_EMAIL = 'toto@gmail.com';
-const TEST_USER_PASSWORD = '14012002';
+const TEST_MODE = process.env.EXPO_PUBLIC_TEST_MODE === 'true';
+const TEST_USER_EMAIL = process.env.EXPO_PUBLIC_TEST_USER_EMAIL;
+const TEST_USER_PASSWORD = process.env.EXPO_PUBLIC_TEST_USER_PASSWORD;
 
 function sessionToUser(session: Session): User {
   return {

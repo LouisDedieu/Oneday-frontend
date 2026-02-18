@@ -1,14 +1,13 @@
 import '../styles/global.css';
 
-import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Toaster } from 'sonner-native';
-import { AuthProvider } from '../context/AuthContext';
-import { useAuthGuardState, LoadingScreen, NetworkErrorScreen, EmailPendingScreen } from '../components/AuthGuard';
+import { AuthProvider } from '@/context/AuthContext';
+import { useAuthGuardState, LoadingScreen, NetworkErrorScreen, EmailPendingScreen } from '@/components/AuthGuard';
 import DebugPanel from '../components/DebugPanel';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 
 function AuthGate({ onRetry }: { onRetry: () => void }) {
   const { group, isPasswordRecovery } = useAuthGuardState();
@@ -57,7 +56,7 @@ export default function RootLayout() {
         <AuthProvider key={retryKey}>
           <AuthGate onRetry={handleRetry} />
           <Toaster position="top-center" />
-          {__DEV__ && <DebugPanel />}
+          {process.env.EXPO_PUBLIC_DEV_MODE === 'true' && <DebugPanel />}
         </AuthProvider>
       </SafeAreaView>
     </SafeAreaProvider>
