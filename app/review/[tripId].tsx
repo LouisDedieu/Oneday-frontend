@@ -603,6 +603,8 @@ export default function ReviewModePage() {
         await syncDestinations(trip.id);
         await saveTrip(user.id, trip.id);
         setIsSaved(true);
+        // Rediriger vers la page du trip après sauvegarde
+        router.push(`/(tabs)/trips/${trip.id}`);
       }
     } catch (err: any) {
       Alert.alert('Erreur', err.message);
@@ -654,7 +656,7 @@ export default function ReviewModePage() {
       >
         <View className="flex-row items-center gap-3">
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => router.navigate('/(tabs)')}
             style={{ padding: 8 }}
           >
             <View pointerEvents="none">
