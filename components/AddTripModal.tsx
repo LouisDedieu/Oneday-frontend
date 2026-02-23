@@ -106,7 +106,7 @@ export default function AddTripModal({ isOpen, onClose }: AddTripModalProps) {
     if (result.trip_id) {
       Toast.show({ type: 'success', text1: 'Itinéraire extrait avec succès !' });
       onClose();
-      router.push(`/trips/${result.trip_id}`);
+      router.push(`/review/${result.trip_id}`);
     } else {
       Toast.show({
         type:  'success',
