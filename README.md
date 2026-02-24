@@ -82,13 +82,22 @@ open ios/BomboMobile.xcworkspace
 2. Sur l'iPhone : **Réglages > Confidentialité et sécurité > Mode développeur** → Activer
 3. Faire confiance à l'ordinateur si demandé
 
-#### 7. Build et installation
+#### 7. Configurer le mode Release (recommandé)
+
+Pour que l'app fonctionne de façon autonome (sans connexion au Mac) :
+
+1. Dans Xcode : **Product → Scheme → Edit Scheme**
+2. Cliquer sur **Run** dans la colonne de gauche
+3. Changer **Build Configuration** de `Debug` à `Release`
+4. Fermer la fenêtre
+
+#### 8. Build et installation
 
 1. Dans Xcode, sélectionner votre iPhone comme destination (en haut à gauche)
 2. Appuyer sur **Cmd + R** ou cliquer sur le bouton Play
 3. Attendre la compilation et l'installation
 
-#### 8. Faire confiance à l'application (première installation)
+#### 9. Faire confiance à l'application (première installation)
 
 Sur l'iPhone :
 1. **Réglages > Général > Gestion des appareils (ou VPN et gestion des appareils)**
