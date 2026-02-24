@@ -364,7 +364,7 @@ export default function InboxPage() {
   const handleJobClick = (job: InboxJob) => {
     if (job.status !== 'done') return;
     if (job.tripId) {
-      router.push(`/(tabs)/trips/${job.tripId}`);
+      router.push(`/review/${job.tripId}`);
     }
   };
 
@@ -479,6 +479,7 @@ export default function InboxPage() {
       <AddTripModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
+        onAnalysisStarted={() => loadFromDb(false)}
       />
     </View>
   );

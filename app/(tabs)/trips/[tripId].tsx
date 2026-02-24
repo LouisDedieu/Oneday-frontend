@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { InteractiveHeroMap } from '@/components/InteractiveHeroMap';
 import {
-  ArrowLeft,
+  X,
   MapPin,
   ExternalLink,
   Star,
@@ -228,10 +228,10 @@ export default function TripDetailPage() {
       <View className="flex-1 bg-black items-center justify-center px-4" style={{ paddingTop: insets.top }}>
         <Text className="text-zinc-400 text-sm mb-4">Voyage introuvable.</Text>
         <TouchableOpacity
-          onPress={() => router.dismiss()}
+          onPress={() => router.replace('/(tabs)/trips')}
           className="bg-zinc-800 px-6 py-3 rounded-lg"
         >
-          <Text className="text-white font-medium">← Mes voyages</Text>
+          <Text className="text-white font-medium">Mes voyages</Text>
         </TouchableOpacity>
       </View>
     );
@@ -253,8 +253,8 @@ export default function TripDetailPage() {
       ════════════════════════════════════════════ */}
       <View className="bg-zinc-950/95 border-b border-zinc-800/80" style={{ paddingTop: insets.top }}>
         <View className="max-w-2xl mx-auto px-4 py-3 flex-row items-center gap-3">
-          <TouchableOpacity onPress={() => router.dismiss()} className="p-2 -ml-2">
-            <ArrowLeft size={20} color="#a1a1aa" />
+          <TouchableOpacity onPress={() => router.replace('/(tabs)/trips')} className="p-2 -ml-2">
+            <X size={20} color="#a1a1aa" />
           </TouchableOpacity>
 
           <View className="flex-1 min-w-0">

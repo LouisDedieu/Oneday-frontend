@@ -60,13 +60,14 @@ const validateUrl = (value: string) =>
 interface AddTripModalProps {
   isOpen:  boolean;
   onClose: () => void;
+  onAnalysisStarted?: () => void;
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export default function AddTripModal({ isOpen, onClose }: AddTripModalProps) {
+export default function AddTripModal({ isOpen, onClose, onAnalysisStarted }: AddTripModalProps) {
   const router = useRouter();
 
   const [url,             setUrl]             = useState('');
@@ -96,26 +97,21 @@ export default function AddTripModal({ isOpen, onClose }: AddTripModalProps) {
   }, [progress]);
 
   /**
-   * Mirrors the web useEffect:
-   * - trip_id présent → naviguer vers le détail
-   * - trip_id absent  → affichage local
+   * Quand l'analyse est terminée, afficher un toast de succès.
+   * L'utilisateur peut ensuite cliquer sur l'analyse dans l'inbox.
    */
   useEffect(() => {
     if (!result) return;
 
     if (result.trip_id) {
       Toast.show({ type: 'success', text1: 'Itinéraire extrait avec succès !' });
-      onClose();
-      router.push(`/review/${result.trip_id}`);
     } else {
       Toast.show({
-        type:  'success',
-        text1: 'Analyse terminée (affichage local, non sauvegardé)',
+        type: 'success',
+        text1: 'Analyse terminée (affichage local)',
       });
-      onClose();
-      router.push({ pathname: '/analysis/local', params: { trip: JSON.stringify(result) } });
     }
-  }, [result, router, onClose]);
+  }, [result]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -137,7 +133,13 @@ export default function AddTripModal({ isOpen, onClose }: AddTripModalProps) {
     }
 
     try {
-      await analyze(url, userId);
+      analyze(url, userId);
+      // Fermer le modal et rafraîchir l'inbox après un court délai
+      // pour laisser le temps au job d'être créé côté backend
+      setTimeout(() => {
+        onClose();
+        onAnalysisStarted?.();
+      }, 500);
     } catch (err: any) {
       console.error("Erreur d'analyse:", err);
     }
