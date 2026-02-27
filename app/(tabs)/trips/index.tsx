@@ -1,8 +1,8 @@
 /**
  * app/(tabs)/trips/index.tsx
  *
- * Route : /trips
- * Affiche les trips validés de l'utilisateur (user_saved_trips → trips)
+ * Route: /trips (now labeled "Saved")
+ * Displays user's saved items (trips and cities) with filter tabs
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -19,28 +19,27 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Map, MapPin, Calendar, Loader2, Bookmark, Trash2 } from 'lucide-react-native';
+import {
+  Map,
+  MapPin,
+  Calendar,
+  Loader2,
+  Bookmark,
+  Trash2,
+  Building2,
+  Star,
+} from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
-import { getUserSavedTrips, deleteTrip } from '@/services/tripService';
+import { deleteTrip } from '@/services/tripService';
+import { deleteCity } from '@/services/cityService';
+import {
+  getUserSavedItems,
+  SavedItem,
+  SavedFilter,
+  getEntityAccentColor,
+} from '@/services/savedService';
 
-// ── Type ──────────────────────────────────────────────────────────────────────
-
-interface SavedTripRow {
-  id: string;
-  notes: string | null;
-  created_at: string;
-  trips: {
-    id: string;
-    trip_title: string;
-    vibe: string | null;
-    duration_days: number;
-    thumbnail_url: string | null;
-    source_url: string | null;
-    content_creator_handle: string | null;
-  } | null;
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// -- Helpers ------------------------------------------------------------------
 
 function timeAgo(dateString: string): string {
   const diffDays = Math.floor(
@@ -48,12 +47,12 @@ function timeAgo(dateString: string): string {
   );
   if (diffDays === 0) return "Aujourd'hui";
   if (diffDays === 1) return 'Hier';
-  if (diffDays < 7)  return `Il y a ${diffDays} jours`;
+  if (diffDays < 7) return `Il y a ${diffDays} jours`;
   if (diffDays < 30) return `Il y a ${Math.floor(diffDays / 7)} semaines`;
   return `Il y a ${Math.floor(diffDays / 30)} mois`;
 }
 
-// ── SpinningLoader — équivalent <Loader2 className="animate-spin" /> ──────────
+// -- SpinningLoader -----------------------------------------------------------
 
 function SpinningLoader({ size = 32, color = '#60a5fa' }: { size?: number; color?: string }) {
   const rotation = useRef(new Animated.Value(0)).current;
@@ -69,7 +68,10 @@ function SpinningLoader({ size = 32, color = '#60a5fa' }: { size?: number; color
     ).start();
   }, []);
 
-  const spin = rotation.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  const spin = rotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   return (
     <Animated.View style={{ transform: [{ rotate: spin }] }}>
@@ -78,27 +80,69 @@ function SpinningLoader({ size = 32, color = '#60a5fa' }: { size?: number; color
   );
 }
 
-// ── TripCard — avec animation staggerée ───────────────────────────────────────
-// web: motion.div initial { opacity:0, y:20 } → animate { opacity:1, y:0 }, delay index * 0.08s
+// -- Filter Tabs --------------------------------------------------------------
 
-function TripCard({
-                    trip,
-                    animIndex,
-                    onPress,
-                    onDelete,
-                  }: {
-  trip: SavedTripRow;
+function FilterTabs({
+  filter,
+  onFilterChange,
+}: {
+  filter: SavedFilter;
+  onFilterChange: (f: SavedFilter) => void;
+}) {
+  const filters: { key: SavedFilter; label: string }[] = [
+    { key: 'all', label: 'All' },
+    { key: 'trip', label: 'Trips' },
+    { key: 'city', label: 'Cities' },
+  ];
+
+  return (
+    <View
+      className="flex-row border-b border-zinc-800"
+      style={{ paddingHorizontal: 16 }}
+    >
+      {filters.map(({ key, label }) => (
+        <TouchableOpacity
+          key={key}
+          onPress={() => onFilterChange(key)}
+          className="flex-1 py-3"
+          style={{
+            borderBottomWidth: filter === key ? 2 : 0,
+            borderBottomColor: filter === key ? '#3b82f6' : 'transparent',
+          }}
+        >
+          <Text
+            className={`text-center text-sm font-medium ${
+              filter === key ? 'text-blue-400' : 'text-zinc-500'
+            }`}
+          >
+            {label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
+
+// -- EntityCard ---------------------------------------------------------------
+
+function EntityCard({
+  item,
+  animIndex,
+  onPress,
+  onDelete,
+}: {
+  item: SavedItem;
   animIndex: number;
   onPress: () => void;
   onDelete: () => void;
 }) {
-  const t = trip.trips;
-  if (!t) return null;
+  const isCity = item.entity_type === 'city';
+  const accentColor = getEntityAccentColor(item.entity_type);
 
   const handleDelete = () => {
     Alert.alert(
-      'Supprimer définitivement ?',
-      'Ce voyage sera supprimé de façon permanente et ne pourra pas être récupéré.',
+      'Supprimer definitivement ?',
+      `Ce ${isCity ? 'guide' : 'voyage'} sera supprime de facon permanente.`,
       [
         { text: 'Annuler', style: 'cancel' },
         { text: 'Supprimer', style: 'destructive', onPress: onDelete },
@@ -106,16 +150,16 @@ function TripCard({
     );
   };
 
-  // Entrée staggerée
-  const opacity     = useRef(new Animated.Value(0)).current;
-  const translateY  = useRef(new Animated.Value(20)).current;
+  // Staggered entry animation
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(20)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(opacity, {
         toValue: 1,
         duration: 300,
-        delay: animIndex * 80, // 0.08s par index
+        delay: animIndex * 80,
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
@@ -131,90 +175,122 @@ function TripCard({
 
   return (
     <Animated.View style={{ opacity, transform: [{ translateY }] }}>
-      {/* web: bg-zinc-900 rounded-xl border border-zinc-800 hover:border-zinc-700 overflow-hidden */}
       <TouchableOpacity
         onPress={onPress}
         activeOpacity={0.8}
         className="bg-zinc-900 rounded-xl overflow-hidden"
-        style={{ borderWidth: 1, borderColor: '#27272a' }}
+        style={{
+          borderWidth: 1,
+          borderColor: '#27272a',
+          borderLeftWidth: 4,
+          borderLeftColor: accentColor,
+        }}
       >
-        {/* ── Thumbnail ── */}
-        {t.thumbnail_url ? (
+        {/* Thumbnail */}
+        {item.thumbnail_url ? (
           <View className="relative h-48 bg-zinc-800 overflow-hidden">
             <Image
-              source={{ uri: t.thumbnail_url }}
+              source={{ uri: item.thumbnail_url }}
               className="w-full h-full"
               resizeMode="cover"
             />
-            {/*
-             * web: bg-gradient-to-t from-black/70 to-transparent
-             * RN: gradient approché par deux calques semi-transparents
-             */}
             <View
               className="absolute inset-0"
               style={{ backgroundColor: 'rgba(0,0,0,0.70)' }}
             />
             <View className="absolute bottom-4 left-4 right-4">
-              <Text className="text-xl font-bold text-white leading-tight" numberOfLines={2}>
-                {t.trip_title}
+              {/* Entity type badge */}
+              <View
+                className="self-start px-2 py-0.5 rounded-full mb-2"
+                style={{ backgroundColor: `${accentColor}33` }}
+              >
+                <Text style={{ color: accentColor, fontSize: 10, fontWeight: '600' }}>
+                  {isCity ? 'City Guide' : 'Trip'}
+                </Text>
+              </View>
+              <Text
+                className="text-xl font-bold text-white leading-tight"
+                numberOfLines={2}
+              >
+                {item.title}
               </Text>
-              {t.vibe && (
-                <Text className="text-xs text-zinc-300 mt-1">{t.vibe}</Text>
+              {item.subtitle && (
+                <Text className="text-xs text-zinc-300 mt-1">{item.subtitle}</Text>
               )}
             </View>
           </View>
         ) : (
-          /* Pas de thumbnail — web: p-4 pb-0 */
           <View className="p-4 pb-0">
-            <Text className="text-xl font-bold text-white">{t.trip_title}</Text>
-            {t.vibe && (
-              <Text className="text-xs text-zinc-400 mt-1">{t.vibe}</Text>
+            {/* Entity type badge */}
+            <View
+              className="self-start px-2 py-0.5 rounded-full mb-2"
+              style={{ backgroundColor: `${accentColor}33` }}
+            >
+              <Text style={{ color: accentColor, fontSize: 10, fontWeight: '600' }}>
+                {isCity ? 'City Guide' : 'Trip'}
+              </Text>
+            </View>
+            <Text className="text-xl font-bold text-white">{item.title}</Text>
+            {item.subtitle && (
+              <Text className="text-xs text-zinc-400 mt-1">{item.subtitle}</Text>
             )}
           </View>
         )}
 
-        {/* ── Infos ── */}
+        {/* Info section */}
         <View className="p-4 gap-3">
-
-          {/* Méta : durée + date + créateur */}
           <View className="flex-row items-center gap-4 flex-wrap">
-            {t.duration_days > 0 && (
+            {/* Duration or highlights count */}
+            {isCity && item.highlights_count ? (
               <View className="flex-row items-center gap-1.5">
-                <MapPin size={16} color="#60a5fa" /* blue-400 */ />
-                <Text className="text-sm text-zinc-400">{t.duration_days} jours</Text>
+                <Star size={16} color={accentColor} />
+                <Text className="text-sm text-zinc-400">
+                  {item.highlights_count} highlights
+                </Text>
               </View>
-            )}
+            ) : item.duration_days ? (
+              <View className="flex-row items-center gap-1.5">
+                <MapPin size={16} color={accentColor} />
+                <Text className="text-sm text-zinc-400">{item.duration_days} jours</Text>
+              </View>
+            ) : null}
+
+            {/* Date */}
             <View className="flex-row items-center gap-1.5">
-              <Calendar size={16} color="#71717a" /* zinc-400 */ />
-              <Text className="text-sm text-zinc-400">{timeAgo(trip.created_at)}</Text>
+              <Calendar size={16} color="#71717a" />
+              <Text className="text-sm text-zinc-400">{timeAgo(item.created_at)}</Text>
             </View>
-            {t.content_creator_handle && (
-              <Text className="text-sm text-zinc-500">@{t.content_creator_handle}</Text>
+
+            {/* Creator */}
+            {item.content_creator_handle && (
+              <Text className="text-sm text-zinc-500">
+                @{item.content_creator_handle}
+              </Text>
             )}
           </View>
 
-          {/* Notes utilisateur — web: text-xs text-zinc-500 italic border-t border-zinc-800 pt-2 */}
-          {trip.notes && (
+          {/* User notes */}
+          {item.notes && (
             <Text
               className="text-xs text-zinc-500 italic pt-2"
               style={{ borderTopWidth: 1, borderTopColor: '#27272a' }}
             >
-              📝 {trip.notes}
+              {item.notes}
             </Text>
           )}
 
-          {/* Footer: Badge sauvegardé + bouton supprimer */}
+          {/* Footer */}
           <View className="flex-row items-center justify-between pt-1">
             <View className="flex-row items-center gap-1.5">
-              <Bookmark size={14} color="#4ade80" fill="#4ade80" /* green-400 */ />
-              <Text className="text-xs text-green-400">Sauvegardé</Text>
+              <Bookmark size={14} color="#4ade80" fill="#4ade80" />
+              <Text className="text-xs text-green-400">Sauvegarde</Text>
             </View>
             <TouchableOpacity
               onPress={handleDelete}
               className="p-2 -mr-2"
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Trash2 size={18} color="#71717a" /* zinc-500 */ />
+              <Trash2 size={18} color="#71717a" />
             </TouchableOpacity>
           </View>
         </View>
@@ -223,135 +299,243 @@ function TripCard({
   );
 }
 
-// ── Composant principal ───────────────────────────────────────────────────────
+// -- Main Component -----------------------------------------------------------
 
-export default function TripsPage() {
+export default function SavedPage() {
   const router = useRouter();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
 
-  const [rows,       setRows]       = useState<SavedTripRow[]>([]);
-  const [loading,    setLoading]    = useState(true);
+  const [filter, setFilter] = useState<SavedFilter>('all');
+  const [items, setItems] = useState<SavedItem[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error,      setError]      = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const loadTrips = useCallback(async () => {
-    if (!user) { setLoading(false); return; }
-    try {
-      const data = await getUserSavedTrips(user.id);
-      setRows(data as SavedTripRow[]);
-      setError(null);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+  const loadItems = useCallback(
+    async (pageNum: number, append = false) => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const response = await getUserSavedItems(user.id, filter, pageNum, 20);
+        if (append) {
+          setItems((prev) => [...prev, ...response.items]);
+        } else {
+          setItems(response.items);
+        }
+        setHasMore(response.has_more);
+        setError(null);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+        setLoadingMore(false);
+      }
+    },
+    [user, filter]
+  );
+
+  // Initial load
+  useEffect(() => {
+    setLoading(true);
+    setPage(1);
+    loadItems(1, false);
+  }, [filter, user]);
+
+  // Reload on focus
+  useFocusEffect(
+    useCallback(() => {
+      loadItems(1, false);
+    }, [loadItems])
+  );
+
+  // Handle filter change
+  const handleFilterChange = (newFilter: SavedFilter) => {
+    if (newFilter !== filter) {
+      setFilter(newFilter);
+      setPage(1);
+      setItems([]);
+      setHasMore(true);
     }
-  }, [user]);
+  };
 
-  useEffect(() => { loadTrips(); }, [loadTrips]);
+  // Load more (infinite scroll)
+  const handleLoadMore = () => {
+    if (!hasMore || loadingMore || loading) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    setPage(nextPage);
+    loadItems(nextPage, true);
+  };
 
-  // Rechargement à chaque focus — cohérent avec le web (retour depuis review)
-  useFocusEffect(useCallback(() => { loadTrips(); }, [loadTrips]));
+  // Refresh
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setPage(1);
+    loadItems(1, false);
+  };
 
-  // ── États de chargement / erreur ──────────────────────────────────────────
+  // Delete handler
+  const handleDelete = async (item: SavedItem) => {
+    try {
+      if (item.entity_type === 'city') {
+        await deleteCity(item.entity_id);
+      } else {
+        await deleteTrip(item.entity_id);
+      }
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
+    } catch (err) {
+      Alert.alert('Erreur', 'Impossible de supprimer.');
+    }
+  };
 
-  if (loading) {
+  // Navigation handler
+  const handlePress = (item: SavedItem) => {
+    if (item.entity_type === 'city') {
+      router.push(`/(tabs)/trips/city/${item.entity_id}`);
+    } else {
+      router.push(`/(tabs)/trips/${item.entity_id}`);
+    }
+  };
+
+  // Loading state
+  if (loading && items.length === 0) {
     return (
-      <View className="flex-1 bg-black items-center justify-center" style={{ paddingTop: insets.top }}>
+      <View
+        className="flex-1 bg-black items-center justify-center"
+        style={{ paddingTop: insets.top }}
+      >
         <SpinningLoader size={32} color="#60a5fa" />
       </View>
     );
   }
 
-  if (error) {
+  // Error state
+  if (error && items.length === 0) {
     return (
-      <View className="flex-1 bg-black items-center justify-center" style={{ paddingTop: insets.top }}>
+      <View
+        className="flex-1 bg-black items-center justify-center"
+        style={{ paddingTop: insets.top }}
+      >
         <Text className="text-sm text-red-400">Erreur : {error}</Text>
       </View>
     );
   }
 
+  // Not logged in
   if (!user) {
     return (
-      <View className="flex-1 bg-black items-center justify-center" style={{ paddingTop: insets.top }}>
-        <Text className="text-zinc-400">Connectez-vous pour voir vos voyages.</Text>
+      <View
+        className="flex-1 bg-black items-center justify-center"
+        style={{ paddingTop: insets.top }}
+      >
+        <Text className="text-zinc-400">Connectez-vous pour voir vos sauvegardes.</Text>
       </View>
     );
   }
 
   return (
     <View className="flex-1 bg-black">
+      {/* Header with filter tabs */}
+      <View style={{ paddingTop: insets.top }}>
+        <FilterTabs filter={filter} onFilterChange={handleFilterChange} />
+      </View>
 
-      {/* ── Liste ── */}
+      {/* List */}
       <FlatList
-        data={rows}
+        data={items}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 16, paddingBottom: 16, gap: 16 }}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: 16,
+          paddingBottom: 16,
+          gap: 16,
+        }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={() => { setRefreshing(true); loadTrips(); }}
-            tintColor="#60a5fa" /* blue-400 */
+            onRefresh={handleRefresh}
+            tintColor="#60a5fa"
           />
         }
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
         renderItem={({ item, index }) => (
-          <TripCard
-            trip={item}
+          <EntityCard
+            item={item}
             animIndex={index}
-            onPress={() => {
-              if (item.trips) {
-                router.push(`/(tabs)/trips/${item.trips.id}`);
-              }
-            }}
-            onDelete={async () => {
-              if (item.trips) {
-                try {
-                  await deleteTrip(item.trips.id);
-                  setRows((prev) => prev.filter((r) => r.id !== item.id));
-                } catch (err) {
-                  Alert.alert('Erreur', 'Impossible de supprimer le voyage.');
-                }
-              }
-            }}
+            onPress={() => handlePress(item)}
+            onDelete={() => handleDelete(item)}
           />
         )}
-        ListEmptyComponent={
-          // web: motion.div initial opacity:0 y:20 → animate opacity:1 y:0
-          <EmptyState />
+        ListEmptyComponent={<EmptyState filter={filter} />}
+        ListFooterComponent={
+          loadingMore ? (
+            <View className="py-4 items-center">
+              <SpinningLoader size={24} color="#60a5fa" />
+            </View>
+          ) : null
         }
       />
     </View>
   );
 }
 
-// ── Empty state animé ─────────────────────────────────────────────────────────
+// -- Empty State --------------------------------------------------------------
 
-function EmptyState() {
-  const opacity    = useRef(new Animated.Value(0)).current;
+function EmptyState({ filter }: { filter: SavedFilter }) {
+  const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(20)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(opacity,    { toValue: 1, duration: 300, easing: Easing.out(Easing.ease), useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration: 300, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 300,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 300,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
     ]).start();
   }, []);
+
+  const isCity = filter === 'city';
+  const Icon = isCity ? Building2 : Map;
+  const title =
+    filter === 'all'
+      ? 'Aucune sauvegarde'
+      : filter === 'city'
+      ? 'Aucun guide de ville'
+      : 'Aucun voyage';
+  const subtitle =
+    filter === 'all'
+      ? "Validez des videos depuis l'Inbox pour creer vos premiers itineraires."
+      : filter === 'city'
+      ? "Analysez des videos de type 'city guide' pour decouvrir des villes."
+      : "Analysez des videos de voyage pour creer des itineraires.";
 
   return (
     <Animated.View
       style={{ opacity, transform: [{ translateY }] }}
       className="items-center py-16"
     >
-      {/* web: w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4 */}
       <View className="w-20 h-20 bg-zinc-800 rounded-full items-center justify-center mb-4">
-        <Map size={40} color="#52525b" /* zinc-600 */ />
+        <Icon size={40} color="#52525b" />
       </View>
-      <Text className="text-xl font-medium text-white mb-2">
-        Aucun voyage pour le moment
-      </Text>
+      <Text className="text-xl font-medium text-white mb-2">{title}</Text>
       <Text className="text-zinc-400 text-center" style={{ maxWidth: 280 }}>
-        Validez des vidéos depuis l'Inbox pour créer vos premiers itinéraires de voyage.
+        {subtitle}
       </Text>
     </Animated.View>
   );

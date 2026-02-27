@@ -33,7 +33,7 @@ import {
   deleteSpot,
 } from '@/services/reviewService';
 import type { DbTrip, DbDay, DbSpot, SpotUpdatePayload } from '@/services/reviewService';
-import Button from '@/components/Button';
+import { Button } from '@/components/Button';
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 

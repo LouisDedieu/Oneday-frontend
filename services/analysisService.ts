@@ -14,7 +14,7 @@
 
 import React from 'react';
 import EventSource, { type EventSourceEvent } from 'react-native-sse';
-import { AnalysisResponse, AnalysisError } from '../types/api';
+import { AnalysisResponse, AnalysisError, EntityType } from '../types/api';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -66,22 +66,30 @@ export interface AnalysisCallbacks {
  *   1. POST /analyze/url  → reçoit { job_id }
  *   2. GET  /analyze/stream/{job_id} via react-native-sse (supporte les headers)
  *   3. Résout avec AnalysisResponse quand status === "done"
+ *
+ * @param entityTypeOverride - Force le type d'entité: 'trip' | 'city' | undefined (auto)
  */
 export async function analyzeVideoUrl(
   url: string,
   callbacks?: AnalysisCallbacks,
   userId?: string,
   useTestRoute = false,
+  entityTypeOverride?: EntityType,
 ): Promise<AnalysisResponse> {
   const endpoint = useTestRoute ? '/test/analyze/url' : '/analyze/url';
 
   // ── Étape 1 : démarrer le job ──────────────────────────────────────────────
   let job_id: string;
   try {
+    const body: Record<string, any> = { url, user_id: userId };
+    if (entityTypeOverride) {
+      body.entity_type_override = entityTypeOverride;
+    }
+
     const startRes = await fetch(`${API_BASE}${endpoint}`, {
       method:  'POST',
       headers: BASE_HEADERS,
-      body:    JSON.stringify({ url, user_id: userId }),
+      body:    JSON.stringify(body),
     });
 
     if (!startRes.ok) {
@@ -190,6 +198,7 @@ export function useVideoAnalysis() {
     url: string,
     userId?: string,
     useTestRoute = false,
+    entityTypeOverride?: EntityType,
   ): Promise<AnalysisResponse> => {
     setIsAnalyzing(true);
     setProgress(0);
@@ -208,6 +217,7 @@ export function useVideoAnalysis() {
         },
         userId,
         useTestRoute,
+        entityTypeOverride,
       );
       return res;
     } catch (err: any) {

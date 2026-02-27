@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { NativeTabs, Icon, Label } from 'expo-router/unstable-native-tabs';
 import { View, Text, Platform, DynamicColorIOS } from 'react-native';
-import { Inbox, Map, User } from 'lucide-react-native';
+import { Inbox, Bookmark, User } from 'lucide-react-native';
 
 const COLOR_ACTIVE   = '#3b82f6';
 const COLOR_INACTIVE = '#71717a';
@@ -51,7 +51,7 @@ function ClassicTabs() {
       <Tabs.Screen
         name="trips"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon Icon={Map} label="Trips" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon Icon={Bookmark} label="Saved" focused={focused} />,
         }}
       />
       <Tabs.Screen
@@ -86,8 +86,8 @@ function LiquidGlassTabs() {
         <Label>Inbox</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="trips">
-        <Icon sf={{ default: 'map', selected: 'map.fill' }} md="map" />
-        <Label>Trips</Label>
+        <Icon sf={{ default: 'bookmark', selected: 'bookmark.fill' }} md="bookmark" />
+        <Label>Saved</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
         <Icon sf={{ default: 'person', selected: 'person.fill' }} md="person" />

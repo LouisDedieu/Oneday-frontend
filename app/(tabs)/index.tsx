@@ -30,6 +30,8 @@ import {
   ExternalLink,
   Plus,
   Loader2,
+  Map,
+  MapPin,
 } from 'lucide-react-native';
 import { apiFetch } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -39,10 +41,13 @@ import AddTripModal from '@/components/AddTripModal';
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type JobStatus = 'pending' | 'downloading' | 'analyzing' | 'done' | 'error';
+type EntityType = 'trip' | 'city';
 
 interface InboxJob {
   jobId: string;
   tripId: string | null;
+  cityId: string | null;
+  entityType: EntityType;
   title: string;
   sourceUrl: string;
   platform: 'tiktok' | 'instagram' | 'unknown';
@@ -51,6 +56,7 @@ interface InboxJob {
   progressPct: number;
   errorMessage: string | null;
   isLocal: boolean;
+  highlightsCount?: number;
 }
 
 type RootStackParamList = {
@@ -160,8 +166,9 @@ function JobCard({
 }) {
   const cfg = STATUS_CONFIG[job.status];
   const Icon = cfg.icon;
-  const isClickable = job.status === 'done' && !!job.tripId;
+  const isClickable = job.status === 'done' && (!!job.tripId || !!job.cityId);
   const isInProgress = ['pending', 'downloading', 'analyzing'].includes(job.status);
+  const isCity = job.entityType === 'city';
 
   // Entrée staggerée — web: motion initial { opacity:0, x:-20 } → { opacity:1, x:0 }, delay index*0.04
   const opacity    = useRef(new Animated.Value(0)).current;
@@ -229,24 +236,55 @@ function JobCard({
           </View>
 
           <View className="flex-1 min-w-0">
-            {/* Titre + badge statut coloré */}
+            {/* Titre + badges */}
             <View className="flex-row items-start justify-between gap-2">
-              <Text className="text-white font-medium flex-1" numberOfLines={1}>
-                {job.title}
-              </Text>
-              {/* Badge — web: bg-{color}/20 text-{color}-300 border-{color}/30 */}
-              <View
-                className="flex-row items-center gap-1 px-2 py-0.5 rounded-full flex-shrink-0"
-                style={{
-                  backgroundColor: cfg.badgeBg,
-                  borderWidth: 1,
-                  borderColor: cfg.badgeBorder,
-                }}
-              >
-                <Icon size={12} color={cfg.iconColor} />
-                <Text style={{ fontSize: 10, fontWeight: '500', color: cfg.textColor }}>
-                  {cfg.label}
+              <View className="flex-1 min-w-0">
+                <Text className="text-white font-medium" numberOfLines={1}>
+                  {job.title}
                 </Text>
+                {/* City preview text */}
+                {isCity && job.highlightsCount && job.status === 'done' && (
+                  <Text className="text-xs text-purple-400 mt-0.5">
+                    {job.highlightsCount} points d'interet
+                  </Text>
+                )}
+              </View>
+              {/* Badges row */}
+              <View className="flex-row items-center gap-1.5 flex-shrink-0">
+                {/* Entity type badge */}
+                {job.status === 'done' && (
+                  <View
+                    className="flex-row items-center gap-1 px-2 py-0.5 rounded-full"
+                    style={{
+                      backgroundColor: isCity ? '#a855f733' : '#3b82f633',
+                      borderWidth: 1,
+                      borderColor: isCity ? '#a855f74D' : '#3b82f64D',
+                    }}
+                  >
+                    {isCity ? (
+                      <MapPin size={10} color="#d8b4fe" />
+                    ) : (
+                      <Map size={10} color="#93c5fd" />
+                    )}
+                    <Text style={{ fontSize: 10, fontWeight: '500', color: isCity ? '#d8b4fe' : '#93c5fd' }}>
+                      {isCity ? 'Ville' : 'Voyage'}
+                    </Text>
+                  </View>
+                )}
+                {/* Status badge */}
+                <View
+                  className="flex-row items-center gap-1 px-2 py-0.5 rounded-full"
+                  style={{
+                    backgroundColor: cfg.badgeBg,
+                    borderWidth: 1,
+                    borderColor: cfg.badgeBorder,
+                  }}
+                >
+                  <Icon size={12} color={cfg.iconColor} />
+                  <Text style={{ fontSize: 10, fontWeight: '500', color: cfg.textColor }}>
+                    {cfg.label}
+                  </Text>
+                </View>
               </View>
             </View>
 
@@ -288,13 +326,15 @@ function JobCard({
               <Text className="text-xs text-red-400 mt-2">{job.errorMessage}</Text>
             )}
 
-            {/* Footer : date relative + lien "Voir l'itinéraire" */}
+            {/* Footer : date relative + lien */}
             <View className="flex-row items-center justify-between mt-2">
               <Text className="text-xs text-zinc-600">{relativeTime}</Text>
               {isClickable && (
                 <View className="flex-row items-center gap-1">
-                  <Text className="text-xs text-blue-400">Voir l'itinéraire</Text>
-                  <ExternalLink size={12} color="#60a5fa" /* blue-400 */ />
+                  <Text className="text-xs" style={{ color: isCity ? '#a855f7' : '#60a5fa' }}>
+                    {isCity ? 'Voir la ville' : "Voir l'itineraire"}
+                  </Text>
+                  <ExternalLink size={12} color={isCity ? '#a855f7' : '#60a5fa'} />
                 </View>
               )}
             </View>
@@ -363,7 +403,11 @@ export default function InboxPage() {
 
   const handleJobClick = (job: InboxJob) => {
     if (job.status !== 'done') return;
-    if (job.tripId) {
+
+    // Route based on entity type
+    if (job.entityType === 'city' && job.cityId) {
+      router.push(`/review/city/${job.cityId}`);
+    } else if (job.tripId) {
       router.push(`/review/${job.tripId}`);
     }
   };
