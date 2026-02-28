@@ -3,12 +3,15 @@ import '../styles/global.css';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 import { Toaster } from 'sonner-native';
 import { AuthProvider } from '@/context/AuthContext';
 import { useAuthGuardState, LoadingScreen, NetworkErrorScreen, EmailPendingScreen } from '@/components/AuthGuard';
 import DebugPanel from '../components/DebugPanel';
 import { useCallback, useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+import { syncJwtToSharedStorage } from '@/lib/syncJwtToSharedStorage';
+import { useAndroidShareHandler } from '@/hooks/useAndroidShareHandler';
 
 function AuthGate({ onRetry }: { onRetry: () => void }) {
   const { group, isPasswordRecovery } = useAuthGuardState();
@@ -51,6 +54,26 @@ function AuthGate({ onRetry }: { onRetry: () => void }) {
 export default function RootLayout() {
   const [retryKey, setRetryKey] = useState(0);
   const handleRetry = useCallback(() => setRetryKey((k) => k + 1), []);
+
+  // Sync JWT to shared storage for iOS Share Extension
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+
+    syncJwtToSharedStorage().catch(() => {});
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.access_token) {
+        syncJwtToSharedStorage().catch(() => {});
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Handle Android share intent
+  useAndroidShareHandler();
 
   return (
     <SafeAreaProvider>

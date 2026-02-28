@@ -30,6 +30,9 @@ yarn-error.*
 .DS_Store
 *.pem
 
+# Android SDK tools
+cmdline-tools.zip
+
 # local env files
 .env*.local
 
@@ -44,3 +47,4 @@ app-example
 /.idea/
 /.vscode/
 /.env
+/screenshots/

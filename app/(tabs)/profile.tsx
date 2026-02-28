@@ -17,6 +17,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
   User as UserIcon,
@@ -88,6 +89,7 @@ function StatCard({
 export default function ProfilePage() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -136,7 +138,10 @@ export default function ProfilePage() {
   const isTestMode = false; // En React: import.meta.env.VITE_TEST_MODE === 'true'
 
   return (
-    <ScrollView className="flex-1 bg-black">
+    <ScrollView
+      className="flex-1 bg-black"
+      contentContainerStyle={{ paddingTop: insets.top }}
+    >
       {/* ══════════════════════════════════════════
           CONTENT
       ══════════════════════════════════════════ */}

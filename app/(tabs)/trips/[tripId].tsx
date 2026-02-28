@@ -12,6 +12,9 @@ import {
   ActivityIndicator,
   Linking,
   Image,
+  ActionSheetIOS,
+  Platform,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -847,10 +850,74 @@ function SpotCard({ spot }: { spot: DbSpot }) {
   const priceCfg = spot.price_range ? PRICE_CONFIG[spot.price_range] : null;
 
   const openMap = () => {
-    if (spot.latitude && spot.longitude) {
-      Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${spot.latitude},${spot.longitude}`);
-    } else if (spot.address) {
-      Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot.address)}`);
+    const lat = spot.latitude;
+    const lng = spot.longitude;
+    const address = spot.address;
+    const label = encodeURIComponent(spot.name);
+
+    // Build URLs for each map app
+    const getUrls = () => {
+      if (lat && lng) {
+        return {
+          appleMaps: `maps://maps.apple.com/?q=${label}&ll=${lat},${lng}`,
+          googleMaps: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+          waze: `waze://?ll=${lat},${lng}&navigate=yes`,
+        };
+      } else if (address) {
+        const encodedAddress = encodeURIComponent(address);
+        return {
+          appleMaps: `maps://maps.apple.com/?q=${encodedAddress}`,
+          googleMaps: `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`,
+          waze: `waze://?q=${encodedAddress}`,
+        };
+      }
+      return null;
+    };
+
+    const urls = getUrls();
+    if (!urls) return;
+
+    const openUrl = async (url: string, fallbackUrl?: string) => {
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        Linking.openURL(url);
+      } else if (fallbackUrl) {
+        Linking.openURL(fallbackUrl);
+      } else {
+        Alert.alert('Erreur', "Impossible d'ouvrir l'application");
+      }
+    };
+
+    const options = ['Apple Maps', 'Google Maps', 'Waze', 'Annuler'];
+    const cancelButtonIndex = 3;
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options,
+          cancelButtonIndex,
+          title: 'Ouvrir avec',
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 0) {
+            openUrl(urls.appleMaps);
+          } else if (buttonIndex === 1) {
+            openUrl(urls.googleMaps);
+          } else if (buttonIndex === 2) {
+            openUrl(urls.waze, `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`);
+          }
+        }
+      );
+    } else {
+      // Android - use Alert as ActionSheet alternative
+      Alert.alert('Ouvrir avec', undefined, [
+        { text: 'Google Maps', onPress: () => openUrl(urls.googleMaps) },
+        {
+          text: 'Waze',
+          onPress: () => openUrl(urls.waze, `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`),
+        },
+        { text: 'Annuler', style: 'cancel' },
+      ]);
     }
   };
 

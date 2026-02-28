@@ -13,6 +13,9 @@
       "bundleIdentifier": "com.anonymous.BomboMobile",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.com.anonymous.BomboMobile.shared"]
       }
     },
     "android": {
@@ -23,7 +26,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.BomboMobile"
     },
     "web": {
       "output": "static",
@@ -43,7 +47,33 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-share-extension",
+        {
+          "activationRules": [
+            {
+              "type": "url",
+              "max": 1
+            }
+          ],
+          "backgroundColor": {
+            "red": 9,
+            "green": 9,
+            "blue": 11,
+            "alpha": 1
+          },
+          "height": 280
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "15.1"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

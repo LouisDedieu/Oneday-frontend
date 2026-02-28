@@ -161,18 +161,19 @@ function Field({
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function Login() {
-  const { signIn, signUp, resetPassword, resendConfirmation, isAuthenticated, status } = useAuth();
+  const { signIn, signUp, signInWithGoogle, resetPassword, resendConfirmation, isAuthenticated, status } = useAuth();
 
-  const [flow,       setFlow]       = useState<Flow>('signin');
-  const [email,      setEmail]      = useState('');
-  const [password,   setPassword]   = useState('');
-  const [showPass,   setShowPass]   = useState(false);
-  const [loading,    setLoading]    = useState(false);
-  const [error,      setError]      = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [emailSent,  setEmailSent]  = useState(false);  // signup confirmation envoyé
-  const [resetSent,  setResetSent]  = useState(false);  // reset envoyé
-  const [resending,  setResending]  = useState(false);
+  const [flow,          setFlow]         = useState<Flow>('signin');
+  const [email,         setEmail]        = useState('');
+  const [password,      setPassword]     = useState('');
+  const [showPass,      setShowPass]     = useState(false);
+  const [loading,       setLoading]      = useState(false);
+  const [socialLoading, setSocialLoading] = useState(false);
+  const [error,         setError]        = useState<string | null>(null);
+  const [successMsg,    setSuccessMsg]   = useState<string | null>(null);
+  const [emailSent,     setEmailSent]    = useState(false);
+  const [resetSent,     setResetSent]    = useState(false);
+  const [resending,     setResending]    = useState(false);
 
   const emailRef = useRef<TextInput>(null);
 
@@ -253,6 +254,15 @@ export default function Login() {
     } else {
       setSuccessMsg('Email renvoyé ! Vérifiez votre boîte mail.');
     }
+  };
+
+  // ── Google Sign-In ─────────────────────────────────────────────────────────
+  const handleGoogleSignIn = async () => {
+    setSocialLoading(true);
+    setError(null);
+    const { error } = await signInWithGoogle();
+    setSocialLoading(false);
+    if (error) setError('Connexion Google impossible. Réessayez.');
   };
 
   // ── Loading (vérification session initiale) ────────────────────────────────
@@ -503,6 +513,32 @@ export default function Login() {
               </Text>
             }
           </TouchableOpacity>
+
+          {/* ── Social login (signin + signup seulement) ── */}
+          {flow !== 'forgot' && (
+            <>
+              <View className="flex-row items-center gap-2.5">
+                <View className="flex-1 h-px bg-zinc-800" />
+                <Text className="text-zinc-700 text-xs">ou continuer avec</Text>
+                <View className="flex-1 h-px bg-zinc-800" />
+              </View>
+
+              <TouchableOpacity
+                className={`flex-row items-center justify-center gap-3 border border-zinc-700 bg-zinc-900 rounded-[10px] h-[46px] ${socialLoading ? 'opacity-50' : ''}`}
+                onPress={handleGoogleSignIn}
+                disabled={socialLoading || loading}
+                activeOpacity={0.8}
+              >
+                {socialLoading
+                  ? <ActivityIndicator size="small" color="#a1a1aa" />
+                  : <>
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff' }}>G</Text>
+                      <Text className="text-zinc-300 text-[15px] font-medium">Continuer avec Google</Text>
+                    </>
+                }
+              </TouchableOpacity>
+            </>
+          )}
 
           {/* ── Footer links ── */}
           <View className="gap-3">

@@ -2,6 +2,10 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { supabase } from '../lib/supabase';
 import type { Session, AuthError } from '@supabase/supabase-js';
 import { Linking, Platform } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import { syncJwtToSharedStorage } from '../lib/syncJwtToSharedStorage';
+
+const OAUTH_REDIRECT_URI = 'bombomobile://auth/callback';
 
 export interface User {
   id: string;
@@ -25,6 +29,7 @@ interface AuthContextType {
   isPasswordRecovery: boolean;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUp: (email: string, password: string) => Promise<{ error: AuthError | null; emailSent: boolean }>;
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: AuthError | null }>;
@@ -203,6 +208,96 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: null, emailSent };
   }, []);
 
+  const signInWithGoogle = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: OAUTH_REDIRECT_URI,
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (error) return { error };
+      if (!data.url) return { error: new Error('No OAuth URL returned') };
+
+      const result = await WebBrowser.openAuthSessionAsync(data.url, OAUTH_REDIRECT_URI);
+      console.log('[Auth] WebBrowser result:', JSON.stringify(result, null, 2));
+
+      if (result.type === 'success' && result.url) {
+        console.log('[Auth] Callback URL:', result.url);
+
+        // Parse the URL - tokens can be in fragment (#) or query params (?)
+        const url = new URL(result.url);
+        console.log('[Auth] URL hash:', url.hash.substring(0, 50) + '...');
+        const hashParams = new URLSearchParams(url.hash.substring(1));
+
+        // Check for tokens in fragment (implicit flow)
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        console.log('[Auth] Tokens found:', { hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken });
+
+        if (accessToken && refreshToken) {
+          console.log('[Auth] Setting session with tokens...');
+          // Implicit flow - set session directly with tokens
+          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          console.log('[Auth] setSession result:', {
+            hasSession: !!sessionData?.session,
+            error: sessionError?.message
+          });
+          if (sessionError) return { error: sessionError };
+
+          // Manually update auth state since onAuthStateChange may not fire
+          if (sessionData.session) {
+            console.log('[Auth] Updating state to authenticated');
+            setUser(sessionToUser(sessionData.session));
+            setStatus('authenticated');
+            // Sync JWT to shared storage for iOS Share Extension
+            if (Platform.OS === 'ios') {
+              syncJwtToSharedStorage();
+            }
+          }
+          return { error: null };
+        }
+
+        // Check for authorization code (PKCE flow)
+        const code = url.searchParams.get('code');
+        if (code) {
+          const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(result.url);
+          if (sessionError) return { error: sessionError };
+
+          // Manually update auth state since onAuthStateChange may not fire
+          if (sessionData.session) {
+            setUser(sessionToUser(sessionData.session));
+            setStatus('authenticated');
+            // Sync JWT to shared storage for iOS Share Extension
+            if (Platform.OS === 'ios') {
+              syncJwtToSharedStorage();
+            }
+          }
+          return { error: null };
+        }
+
+        // Check for errors
+        const errorDesc = hashParams.get('error_description') || url.searchParams.get('error_description');
+        const errorCode = hashParams.get('error') || url.searchParams.get('error');
+        return { error: new Error(errorDesc || errorCode || 'No tokens or code received') };
+      }
+
+      if (result.type === 'cancel' || result.type === 'dismiss') {
+        return { error: new Error('Authentication cancelled') };
+      }
+
+      return { error: new Error('Authentication failed') };
+    } catch (err) {
+      console.error('[Auth] Google sign-in error:', err);
+      return { error: err instanceof Error ? err : new Error('Unknown error') };
+    }
+  }, []);
+
   const signOut = useCallback(async () => {
     if (TEST_MODE) {
       console.warn('[Auth] Sign-out disabled in test mode');
@@ -245,6 +340,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isPasswordRecovery,
       signIn,
       signUp,
+      signInWithGoogle,
       signOut,
       resetPassword,
       updatePassword,

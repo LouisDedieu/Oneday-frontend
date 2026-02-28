@@ -25,6 +25,27 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+### Features requiring a Development Build
+
+Some features are **not available in Expo Go** and require a development build (`npx expo run:ios` or `npx expo run:android`):
+
+| Feature | Reason |
+|---------|--------|
+| **iOS Share Extension** | Requires native entitlements and app groups |
+| **Shared Keychain (JWT sync)** | Requires `accessGroup` entitlement for SecureStore |
+| **Android Share Intent** | Requires `react-native-share-menu` native module |
+| **iOS 26+ Native Tabs** | Uses `expo-router/unstable-native-tabs` |
+
+To create a development build:
+
+```bash
+# iOS
+npx expo run:ios
+
+# Android
+npx expo run:android
+```
+
 ---
 
 ## Installation sur iPhone (Production Build)

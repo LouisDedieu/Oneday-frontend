@@ -32,10 +32,14 @@ import {
   AlertCircle,
   Sparkles,
   User,
+  Wand2,
+  Map,
+  MapPin,
 } from 'lucide-react-native';
 import { Button } from './Button';
 import { useVideoAnalysis } from '@/services/analysisService';
 import { useAuth, useUserId } from '@/context/AuthContext';
+import { EntityType } from '@/types/api';
 import Toast from 'react-native-toast-message';
 
 // ---------------------------------------------------------------------------
@@ -67,11 +71,45 @@ interface AddTripModalProps {
 // Component
 // ---------------------------------------------------------------------------
 
+// Entity type options for the selector
+type EntityTypeOption = 'auto' | 'trip' | 'city';
+
+const ENTITY_TYPE_OPTIONS: Array<{
+  value: EntityTypeOption;
+  label: string;
+  description: string;
+  icon: React.ComponentType<any>;
+  color: string;
+}> = [
+  {
+    value: 'auto',
+    label: 'Auto',
+    description: 'Detection automatique',
+    icon: Wand2,
+    color: '#a855f7', // purple
+  },
+  {
+    value: 'trip',
+    label: 'Voyage',
+    description: 'Itineraire jour par jour',
+    icon: Map,
+    color: '#3b82f6', // blue
+  },
+  {
+    value: 'city',
+    label: 'Ville',
+    description: 'Guide de ville / POIs',
+    icon: MapPin,
+    color: '#a855f7', // purple
+  },
+];
+
 export default function AddTripModal({ isOpen, onClose, onAnalysisStarted }: AddTripModalProps) {
   const router = useRouter();
 
   const [url,             setUrl]             = useState('');
   const [validationError, setValidationError] = useState('');
+  const [entityType,      setEntityType]      = useState<EntityTypeOption>('auto');
 
   const userId     = useUserId();
   const { user }   = useAuth();
@@ -133,7 +171,11 @@ export default function AddTripModal({ isOpen, onClose, onAnalysisStarted }: Add
     }
 
     try {
-      analyze(url, userId);
+      // Convert 'auto' to undefined for the API
+      const entityTypeOverride: EntityType | undefined =
+        entityType === 'auto' ? undefined : entityType;
+
+      analyze(url, userId, false, entityTypeOverride);
       // Fermer le modal et rafraîchir l'inbox après un court délai
       // pour laisser le temps au job d'être créé côté backend
       setTimeout(() => {
@@ -148,6 +190,7 @@ export default function AddTripModal({ isOpen, onClose, onAnalysisStarted }: Add
   const handleClose = () => {
     setUrl('');
     setValidationError('');
+    setEntityType('auto');
     onClose();
   };
 
@@ -224,6 +267,49 @@ export default function AddTripModal({ isOpen, onClose, onAnalysisStarted }: Add
                         className="flex-1 text-white text-sm py-3 pl-10 pr-3"
                       />
                     </View>
+                  </View>
+
+                  {/* Entity type selector */}
+                  <View className="gap-2">
+                    <Text className="text-sm font-medium text-zinc-300">
+                      Type de contenu
+                    </Text>
+                    <View className="flex-row gap-2">
+                      {ENTITY_TYPE_OPTIONS.map((option) => {
+                        const Icon = option.icon;
+                        const isSelected = entityType === option.value;
+                        return (
+                          <TouchableOpacity
+                            key={option.value}
+                            onPress={() => setEntityType(option.value)}
+                            disabled={isAnalyzing}
+                            className="flex-1 rounded-lg p-3"
+                            style={{
+                              backgroundColor: isSelected ? `${option.color}22` : '#27272a',
+                              borderWidth: 1,
+                              borderColor: isSelected ? `${option.color}66` : '#3f3f46',
+                              opacity: isAnalyzing ? 0.5 : 1,
+                            }}
+                          >
+                            <View className="items-center gap-1.5">
+                              <Icon
+                                size={20}
+                                color={isSelected ? option.color : '#71717a'}
+                              />
+                              <Text
+                                className="text-xs font-medium"
+                                style={{ color: isSelected ? option.color : '#a1a1aa' }}
+                              >
+                                {option.label}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                    <Text className="text-xs text-zinc-500">
+                      {ENTITY_TYPE_OPTIONS.find(o => o.value === entityType)?.description}
+                    </Text>
                   </View>
 
                   {/* Error */}
