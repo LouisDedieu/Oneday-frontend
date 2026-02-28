@@ -16,6 +16,7 @@ import {
   RefreshControl,
   Animated,
   Easing,
+  Alert,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,8 +33,9 @@ import {
   Loader2,
   Map,
   MapPin,
+  Trash2,
 } from 'lucide-react-native';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiDelete } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import {Button} from '@/components/Button';
 import AddTripModal from '@/components/AddTripModal';
@@ -158,10 +160,12 @@ function SpinningLoader({ size = 32, color = '#60a5fa' }: { size?: number; color
 function JobCard({
                    job,
                    onPress,
+                   onDelete,
                    animIndex,
                  }: {
   job: InboxJob;
   onPress: () => void;
+  onDelete: () => void;
   animIndex: number;
 }) {
   const cfg = STATUS_CONFIG[job.status];
@@ -326,9 +330,19 @@ function JobCard({
               <Text className="text-xs text-red-400 mt-2">{job.errorMessage}</Text>
             )}
 
-            {/* Footer : date relative + lien */}
+            {/* Footer : date relative + actions */}
             <View className="flex-row items-center justify-between mt-2">
-              <Text className="text-xs text-zinc-600">{relativeTime}</Text>
+              <View className="flex-row items-center gap-3">
+                <Text className="text-xs text-zinc-600">{relativeTime}</Text>
+                <TouchableOpacity
+                  onPress={onDelete}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  className="flex-row items-center gap-1"
+                >
+                  <Trash2 size={12} color="#ef4444" />
+                  <Text className="text-xs text-red-500">Supprimer</Text>
+                </TouchableOpacity>
+              </View>
               {isClickable && (
                 <View className="flex-row items-center gap-1">
                   <Text className="text-xs" style={{ color: isCity ? '#a855f7' : '#60a5fa' }}>
@@ -415,6 +429,28 @@ export default function InboxPage() {
     }
   };
 
+  const handleDeleteJob = (job: InboxJob) => {
+    Alert.alert(
+      'Supprimer cette analyse ?',
+      `Toutes les données associées à "${job.title}" seront supprimées définitivement.`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiDelete(`/inbox/${job.jobId}`);
+              setJobs((prev) => prev.filter((j) => j.jobId !== job.jobId));
+            } catch (err) {
+              Alert.alert('Erreur', 'Impossible de supprimer cette analyse.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View className="flex-1 bg-black">
       {/* ── Chargement initial ───────────────────────────────────────────────── */}
@@ -487,6 +523,7 @@ export default function InboxPage() {
             <JobCard
               job={item}
               onPress={() => handleJobClick(item)}
+              onDelete={() => handleDeleteJob(item)}
               animIndex={index}
             />
           )}
