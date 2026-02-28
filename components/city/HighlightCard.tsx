@@ -1,7 +1,7 @@
 /**
  * HighlightCard - Display a single highlight/POI with category icon
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Linking, ActionSheetIOS, Platform, Alert } from 'react-native';
 import {
   Utensils,
@@ -12,6 +12,9 @@ import {
   MapPin,
   Star,
   Navigation,
+  Pencil,
+  Trash2,
+  X,
 } from 'lucide-react-native';
 import { Highlight, HighlightCategory, HIGHLIGHT_CATEGORIES } from '@/types/api';
 
@@ -44,9 +47,13 @@ const PRICE_COLORS: Record<string, string> = {
 interface HighlightCardProps {
   highlight: Highlight;
   onPress?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  editable?: boolean;
 }
 
-export function HighlightCard({ highlight, onPress }: HighlightCardProps) {
+export function HighlightCard({ highlight, onPress, onEdit, onDelete, editable = false }: HighlightCardProps) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const category = highlight.category || 'other';
   const Icon = CATEGORY_ICONS[category];
   const color = CATEGORY_COLORS[category];
@@ -202,16 +209,62 @@ export function HighlightCard({ highlight, onPress }: HighlightCardProps) {
           )}
         </View>
 
-        {/* Navigation button */}
-        {hasLocation && (
-          <TouchableOpacity
-            onPress={openMaps}
-            className="ml-2 p-2"
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Navigation size={20} color="#60a5fa" />
-          </TouchableOpacity>
-        )}
+        {/* Action buttons */}
+        <View className="ml-2 items-center gap-1">
+          {/* Navigation button */}
+          {hasLocation && (
+            <TouchableOpacity
+              onPress={openMaps}
+              className="p-2"
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Navigation size={18} color="#60a5fa" />
+            </TouchableOpacity>
+          )}
+
+          {/* Edit/Delete buttons when editable */}
+          {editable && (
+            <>
+              {onEdit && (
+                <TouchableOpacity
+                  onPress={onEdit}
+                  className="p-2"
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Pencil size={16} color="#71717a" />
+                </TouchableOpacity>
+              )}
+
+              {onDelete && (
+                confirmDelete ? (
+                  <View className="flex-row items-center gap-1">
+                    <TouchableOpacity
+                      onPress={() => {
+                        onDelete();
+                        setConfirmDelete(false);
+                      }}
+                      className="px-2 py-1 rounded"
+                      style={{ backgroundColor: '#dc2626' }}
+                    >
+                      <Text style={{ fontSize: 10, color: '#fff' }}>Suppr</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setConfirmDelete(false)} className="p-1">
+                      <X size={12} color="#71717a" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => setConfirmDelete(true)}
+                    className="p-2"
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Trash2 size={16} color="#71717a" />
+                  </TouchableOpacity>
+                )
+              )}
+            </>
+          )}
+        </View>
       </View>
     </TouchableOpacity>
   );

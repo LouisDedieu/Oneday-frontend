@@ -40,6 +40,20 @@ export type HighlightUpdatePayload = Partial<
 >;
 
 /**
+ * Payload for creating a new highlight
+ */
+export interface CreateHighlightPayload {
+  name: string;
+  category?: string;
+  subtype?: string;
+  address?: string;
+  description?: string;
+  price_range?: string;
+  tips?: string;
+  is_must_see?: boolean;
+}
+
+/**
  * Fetch a city for review mode (includes all highlights, validated or not)
  */
 export async function fetchCityForReview(cityId: string): Promise<DbCity | null> {
@@ -89,6 +103,16 @@ export async function reorderHighlights(
  */
 export async function deleteHighlight(highlightId: string): Promise<void> {
   await apiDelete(`/review/city/highlights/${highlightId}`);
+}
+
+/**
+ * Create a new highlight for a city
+ */
+export async function createHighlight(
+  cityId: string,
+  payload: CreateHighlightPayload
+): Promise<Highlight> {
+  return apiPost<Highlight>(`/review/city/${cityId}/highlights`, payload);
 }
 
 /**

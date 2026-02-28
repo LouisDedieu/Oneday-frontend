@@ -13,6 +13,9 @@ import {
   Animated,
   Easing,
   Linking,
+  TextInput,
+  Modal,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -25,17 +28,24 @@ import {
   Star,
   ExternalLink,
   Loader2,
-  Bookmark,
-  BookmarkCheck,
   Smartphone,
   Package,
   Shield,
   AlertTriangle,
+  Plus,
+  X,
+  Save,
 } from 'lucide-react-native';
-import { useAuth } from '@/context/AuthContext';
-import { getCity, isCitySaved, saveCity, unsaveCity } from '@/services/cityService';
-import { CityData, Highlight, HighlightCategory, PracticalInfo } from '@/types/api';
-import { CategoryFilterChips } from '@/components/city/CategoryFilterChips';
+import { getCity } from '@/services/cityService';
+import {
+  createHighlight,
+  updateHighlight,
+  deleteHighlight,
+  type CreateHighlightPayload,
+  type HighlightUpdatePayload,
+} from '@/services/cityReviewService';
+import { CityData, Highlight, HighlightCategory, PracticalInfo, HIGHLIGHT_CATEGORIES } from '@/types/api';
+import { CategoryFilterChips, CATEGORY_COLORS } from '@/components/city/CategoryFilterChips';
 import { HighlightCard } from '@/components/city/HighlightCard';
 import { CityBudgetCard } from '@/components/city/CityBudgetCard';
 import { CityHighlightsMap } from '@/components/city/CityHighlightsMap';
@@ -109,16 +119,28 @@ function TabButton({
 export default function CityDetailPage() {
   const router = useRouter();
   const { cityId } = useLocalSearchParams<{ cityId: string }>();
-  const { user } = useAuth();
   const insets = useSafeAreaInsets();
 
   const [city, setCity] = useState<CityData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>('highlights');
-  const [isSaved, setIsSaved] = useState(false);
-  const [savingState, setSavingState] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<HighlightCategory[]>([]);
+
+  // Add highlight state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addingHighlight, setAddingHighlight] = useState(false);
+  const [newHighlight, setNewHighlight] = useState<CreateHighlightPayload>({
+    name: '',
+    category: 'other',
+    address: '',
+  });
+
+  // Edit highlight state
+  const [editingHighlight, setEditingHighlight] = useState<Highlight | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editForm, setEditForm] = useState<HighlightUpdatePayload>({});
 
   // Load city data
   useEffect(() => {
@@ -128,12 +150,6 @@ export default function CityDetailPage() {
       try {
         const data = await getCity(cityId);
         setCity(data);
-
-        // Check if saved
-        if (user) {
-          const saved = await isCitySaved(user.id, cityId);
-          setIsSaved(saved);
-        }
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -142,7 +158,7 @@ export default function CityDetailPage() {
     };
 
     loadCity();
-  }, [cityId, user]);
+  }, [cityId]);
 
   // Get highlights from city data
   const highlights = useMemo(() => {
@@ -190,24 +206,99 @@ export default function CityDetailPage() {
   const practicalInfo =
     city?.city_practical_info?.[0] || city?.practical_info;
 
-  // Handle save/unsave
-  const handleToggleSave = async () => {
-    if (!user || !cityId || savingState) return;
-    setSavingState(true);
+  // Add new highlight
+  const handleAddHighlight = useCallback(async () => {
+    if (!cityId || !newHighlight.name.trim()) return;
+
+    setAddingHighlight(true);
     try {
-      if (isSaved) {
-        await unsaveCity(user.id, cityId);
-        setIsSaved(false);
-      } else {
-        await saveCity(user.id, cityId);
-        setIsSaved(true);
-      }
-    } catch (err) {
-      console.error('Error toggling save:', err);
+      const created = await createHighlight(cityId, {
+        ...newHighlight,
+        name: newHighlight.name.trim(),
+        address: newHighlight.address?.trim() || undefined,
+      });
+      // Add to local state
+      setCity((prev) => {
+        if (!prev) return prev;
+        const existingHighlights = prev.city_highlights || prev.highlights || [];
+        return {
+          ...prev,
+          city_highlights: [...existingHighlights, created],
+          highlights: [...existingHighlights, created],
+        };
+      });
+      // Reset form and close modal
+      setNewHighlight({ name: '', category: 'other', address: '' });
+      setShowAddModal(false);
+    } catch (err: any) {
+      Alert.alert('Erreur', err.message || 'Impossible de créer le point');
     } finally {
-      setSavingState(false);
+      setAddingHighlight(false);
     }
-  };
+  }, [cityId, newHighlight]);
+
+  // Open edit modal
+  const handleOpenEdit = useCallback((highlight: Highlight) => {
+    setEditingHighlight(highlight);
+    setEditForm({
+      name: highlight.name,
+      category: highlight.category,
+      subtype: highlight.subtype,
+      address: highlight.address,
+      description: highlight.description,
+      price_range: highlight.price_range,
+      tips: highlight.tips,
+      is_must_see: highlight.is_must_see,
+    });
+    setShowEditModal(true);
+  }, []);
+
+  // Save edit
+  const handleSaveEdit = useCallback(async () => {
+    if (!editingHighlight) return;
+
+    setSavingEdit(true);
+    try {
+      await updateHighlight(editingHighlight.id, editForm);
+      // Update local state
+      setCity((prev) => {
+        if (!prev) return prev;
+        const updateHighlights = (highlights: Highlight[]) =>
+          highlights.map((h) => (h.id === editingHighlight.id ? { ...h, ...editForm } : h));
+        return {
+          ...prev,
+          city_highlights: updateHighlights(prev.city_highlights || []),
+          highlights: updateHighlights(prev.highlights || []),
+        };
+      });
+      setShowEditModal(false);
+      setEditingHighlight(null);
+    } catch (err: any) {
+      Alert.alert('Erreur', err.message || 'Impossible de modifier le point');
+    } finally {
+      setSavingEdit(false);
+    }
+  }, [editingHighlight, editForm]);
+
+  // Delete highlight
+  const handleDeleteHighlight = useCallback(async (highlightId: string) => {
+    try {
+      await deleteHighlight(highlightId);
+      // Remove from local state
+      setCity((prev) => {
+        if (!prev) return prev;
+        const filterHighlights = (highlights: Highlight[]) =>
+          highlights.filter((h) => h.id !== highlightId);
+        return {
+          ...prev,
+          city_highlights: filterHighlights(prev.city_highlights || []),
+          highlights: filterHighlights(prev.highlights || []),
+        };
+      });
+    } catch (err: any) {
+      Alert.alert('Erreur', err.message || 'Impossible de supprimer le point');
+    }
+  }, []);
 
   // Loading state
   if (loading) {
@@ -246,34 +337,14 @@ export default function CityDetailPage() {
         className="px-4 pb-4 border-b border-zinc-800"
         style={{ paddingTop: insets.top + 8 }}
       >
-        {/* Top row: Back + Save */}
-        <View className="flex-row items-center justify-between mb-3">
+        {/* Top row: Back */}
+        <View className="flex-row items-center mb-3">
           <TouchableOpacity
             onPress={() => router.navigate('/(tabs)/trips')}
             className="flex-row items-center gap-1"
           >
             <ChevronLeft size={24} color="#fff" />
             <Text className="text-white">Back</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={handleToggleSave}
-            className="flex-row items-center gap-2 px-3 py-1.5 rounded-full"
-            style={{
-              backgroundColor: isSaved ? '#4ade8033' : '#27272a',
-            }}
-            disabled={savingState}
-          >
-            {isSaved ? (
-              <BookmarkCheck size={18} color="#4ade80" />
-            ) : (
-              <Bookmark size={18} color="#71717a" />
-            )}
-            <Text
-              className={`text-sm ${isSaved ? 'text-green-400' : 'text-zinc-400'}`}
-            >
-              {isSaved ? 'Saved' : 'Save'}
-            </Text>
           </TouchableOpacity>
         </View>
 
@@ -371,6 +442,9 @@ export default function CityDetailPage() {
             country={city.country}
             cityLat={city.latitude}
             cityLon={city.longitude}
+            onAddHighlight={() => setShowAddModal(true)}
+            onEditHighlight={handleOpenEdit}
+            onDeleteHighlight={handleDeleteHighlight}
           />
         )}
         {activeTab === 'budget' && budget && <BudgetTab budget={budget} />}
@@ -378,6 +452,280 @@ export default function CityDetailPage() {
           <PracticalTab info={practicalInfo} />
         )}
       </ScrollView>
+
+      {/* Add Highlight Modal */}
+      <Modal
+        visible={showAddModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowAddModal(false)}
+      >
+        <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+          <View
+            className="bg-zinc-900 rounded-t-3xl p-4"
+            style={{ paddingBottom: insets.bottom + 16 }}
+          >
+            {/* Header */}
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-lg font-bold text-white">Ajouter un point</Text>
+              <TouchableOpacity onPress={() => setShowAddModal(false)} className="p-2">
+                <X size={20} color="#71717a" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Form */}
+            <View className="gap-4">
+              {/* Name */}
+              <View>
+                <Text className="text-xs text-zinc-500 uppercase mb-1">Nom *</Text>
+                <TextInput
+                  value={newHighlight.name}
+                  onChangeText={(v) => setNewHighlight((f) => ({ ...f, name: v }))}
+                  placeholder="Ex: Tour Eiffel, Cafe de Flore..."
+                  placeholderTextColor="#52525b"
+                  className="rounded-lg px-3 py-3 text-white"
+                  style={{ backgroundColor: '#27272a', borderWidth: 1, borderColor: '#3f3f46' }}
+                />
+              </View>
+
+              {/* Category */}
+              <View>
+                <Text className="text-xs text-zinc-500 uppercase mb-1">Catégorie</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View className="flex-row gap-2">
+                    {(Object.keys(HIGHLIGHT_CATEGORIES) as HighlightCategory[]).map((cat) => {
+                      const isSelected = newHighlight.category === cat;
+                      const catColor = CATEGORY_COLORS[cat];
+                      return (
+                        <TouchableOpacity
+                          key={cat}
+                          onPress={() => setNewHighlight((f) => ({ ...f, category: cat }))}
+                          className="px-3 py-2 rounded-lg"
+                          style={{
+                            backgroundColor: isSelected ? `${catColor}33` : '#27272a',
+                            borderWidth: 1,
+                            borderColor: isSelected ? `${catColor}4D` : '#3f3f46',
+                          }}
+                        >
+                          <Text style={{ fontSize: 13, color: isSelected ? catColor : '#a1a1aa' }}>
+                            {HIGHLIGHT_CATEGORIES[cat].label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
+              </View>
+
+              {/* Address */}
+              <View>
+                <Text className="text-xs text-zinc-500 uppercase mb-1">Adresse</Text>
+                <TextInput
+                  value={newHighlight.address ?? ''}
+                  onChangeText={(v) => setNewHighlight((f) => ({ ...f, address: v }))}
+                  placeholder="Optionnel"
+                  placeholderTextColor="#52525b"
+                  className="rounded-lg px-3 py-3 text-white"
+                  style={{ backgroundColor: '#27272a', borderWidth: 1, borderColor: '#3f3f46' }}
+                />
+              </View>
+
+              {/* Submit */}
+              <TouchableOpacity
+                onPress={handleAddHighlight}
+                disabled={addingHighlight || !newHighlight.name.trim()}
+                className="flex-row items-center justify-center gap-2 py-3 rounded-xl mt-2"
+                style={{
+                  backgroundColor: '#a855f7',
+                  opacity: !newHighlight.name.trim() ? 0.5 : 1,
+                }}
+              >
+                {addingHighlight ? (
+                  <SpinningLoader size={16} color="#fff" />
+                ) : (
+                  <Plus size={18} color="#fff" />
+                )}
+                <Text className="text-white font-medium">Ajouter</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit Highlight Modal */}
+      <Modal
+        visible={showEditModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+          <ScrollView
+            className="bg-zinc-900 rounded-t-3xl"
+            style={{ maxHeight: '80%' }}
+            contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 16 }}
+          >
+            {/* Header */}
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-lg font-bold text-white">Modifier le point</Text>
+              <TouchableOpacity onPress={() => setShowEditModal(false)} className="p-2">
+                <X size={20} color="#71717a" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Form */}
+            <View className="gap-4">
+              {/* Name */}
+              <View>
+                <Text className="text-xs text-zinc-500 uppercase mb-1">Nom *</Text>
+                <TextInput
+                  value={editForm.name ?? ''}
+                  onChangeText={(v) => setEditForm((f) => ({ ...f, name: v }))}
+                  placeholder="Nom du point"
+                  placeholderTextColor="#52525b"
+                  className="rounded-lg px-3 py-3 text-white"
+                  style={{ backgroundColor: '#27272a', borderWidth: 1, borderColor: '#3f3f46' }}
+                />
+              </View>
+
+              {/* Category */}
+              <View>
+                <Text className="text-xs text-zinc-500 uppercase mb-1">Catégorie</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View className="flex-row gap-2">
+                    {(Object.keys(HIGHLIGHT_CATEGORIES) as HighlightCategory[]).map((cat) => {
+                      const isSelected = editForm.category === cat;
+                      const catColor = CATEGORY_COLORS[cat];
+                      return (
+                        <TouchableOpacity
+                          key={cat}
+                          onPress={() => setEditForm((f) => ({ ...f, category: cat }))}
+                          className="px-3 py-2 rounded-lg"
+                          style={{
+                            backgroundColor: isSelected ? `${catColor}33` : '#27272a',
+                            borderWidth: 1,
+                            borderColor: isSelected ? `${catColor}4D` : '#3f3f46',
+                          }}
+                        >
+                          <Text style={{ fontSize: 13, color: isSelected ? catColor : '#a1a1aa' }}>
+                            {HIGHLIGHT_CATEGORIES[cat].label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
+              </View>
+
+              {/* Subtype */}
+              <View>
+                <Text className="text-xs text-zinc-500 uppercase mb-1">Sous-type</Text>
+                <TextInput
+                  value={editForm.subtype ?? ''}
+                  onChangeText={(v) => setEditForm((f) => ({ ...f, subtype: v || undefined }))}
+                  placeholder="Ex: Restaurant italien..."
+                  placeholderTextColor="#52525b"
+                  className="rounded-lg px-3 py-3 text-white"
+                  style={{ backgroundColor: '#27272a', borderWidth: 1, borderColor: '#3f3f46' }}
+                />
+              </View>
+
+              {/* Address */}
+              <View>
+                <Text className="text-xs text-zinc-500 uppercase mb-1">Adresse</Text>
+                <TextInput
+                  value={editForm.address ?? ''}
+                  onChangeText={(v) => setEditForm((f) => ({ ...f, address: v || undefined }))}
+                  placeholder="Optionnel"
+                  placeholderTextColor="#52525b"
+                  className="rounded-lg px-3 py-3 text-white"
+                  style={{ backgroundColor: '#27272a', borderWidth: 1, borderColor: '#3f3f46' }}
+                />
+              </View>
+
+              {/* Description */}
+              <View>
+                <Text className="text-xs text-zinc-500 uppercase mb-1">Description</Text>
+                <TextInput
+                  value={editForm.description ?? ''}
+                  onChangeText={(v) => setEditForm((f) => ({ ...f, description: v || undefined }))}
+                  placeholder="Optionnel"
+                  placeholderTextColor="#52525b"
+                  multiline
+                  numberOfLines={3}
+                  className="rounded-lg px-3 py-3 text-white"
+                  style={{
+                    backgroundColor: '#27272a',
+                    borderWidth: 1,
+                    borderColor: '#3f3f46',
+                    textAlignVertical: 'top',
+                    minHeight: 80,
+                  }}
+                />
+              </View>
+
+              {/* Tips */}
+              <View>
+                <Text className="text-xs text-zinc-500 uppercase mb-1">Conseils</Text>
+                <TextInput
+                  value={editForm.tips ?? ''}
+                  onChangeText={(v) => setEditForm((f) => ({ ...f, tips: v || undefined }))}
+                  placeholder="Optionnel"
+                  placeholderTextColor="#52525b"
+                  multiline
+                  numberOfLines={2}
+                  className="rounded-lg px-3 py-3 text-white"
+                  style={{
+                    backgroundColor: '#27272a',
+                    borderWidth: 1,
+                    borderColor: '#3f3f46',
+                    textAlignVertical: 'top',
+                    minHeight: 60,
+                  }}
+                />
+              </View>
+
+              {/* Must-see toggle */}
+              <TouchableOpacity
+                onPress={() => setEditForm((f) => ({ ...f, is_must_see: !f.is_must_see }))}
+                className="flex-row items-center gap-2 px-3 py-2 rounded-lg self-start"
+                style={{
+                  backgroundColor: editForm.is_must_see ? '#eab3081A' : '#27272a',
+                  borderWidth: 1,
+                  borderColor: editForm.is_must_see ? '#eab3084D' : '#3f3f46',
+                }}
+              >
+                <Star
+                  size={14}
+                  color={editForm.is_must_see ? '#facc15' : '#71717a'}
+                  fill={editForm.is_must_see ? '#facc15' : 'none'}
+                />
+                <Text style={{ fontSize: 12, color: editForm.is_must_see ? '#fde68a' : '#71717a' }}>
+                  Incontournable
+                </Text>
+              </TouchableOpacity>
+
+              {/* Submit */}
+              <TouchableOpacity
+                onPress={handleSaveEdit}
+                disabled={savingEdit || !editForm.name?.trim()}
+                className="flex-row items-center justify-center gap-2 py-3 rounded-xl mt-2"
+                style={{
+                  backgroundColor: '#a855f7',
+                  opacity: !editForm.name?.trim() ? 0.5 : 1,
+                }}
+              >
+                {savingEdit ? (
+                  <SpinningLoader size={16} color="#fff" />
+                ) : (
+                  <Save size={18} color="#fff" />
+                )}
+                <Text className="text-white font-medium">Enregistrer</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -394,6 +742,9 @@ function HighlightsTab({
   country,
   cityLat,
   cityLon,
+  onAddHighlight,
+  onEditHighlight,
+  onDeleteHighlight,
 }: {
   highlights: Highlight[];
   allHighlights: Highlight[];
@@ -404,6 +755,9 @@ function HighlightsTab({
   country?: string;
   cityLat?: number;
   cityLon?: number;
+  onAddHighlight: () => void;
+  onEditHighlight: (highlight: Highlight) => void;
+  onDeleteHighlight: (highlightId: string) => void;
 }) {
   return (
     <View>
@@ -430,7 +784,13 @@ function HighlightsTab({
       {/* Highlights list */}
       <View className="px-4 gap-3 mt-2">
         {highlights.map((highlight) => (
-          <HighlightCard key={highlight.id} highlight={highlight} />
+          <HighlightCard
+            key={highlight.id}
+            highlight={highlight}
+            editable
+            onEdit={() => onEditHighlight(highlight)}
+            onDelete={() => onDeleteHighlight(highlight.id)}
+          />
         ))}
 
         {highlights.length === 0 && (
@@ -438,6 +798,21 @@ function HighlightsTab({
             <Text className="text-zinc-500">No highlights in this category</Text>
           </View>
         )}
+
+        {/* Add highlight button */}
+        <TouchableOpacity
+          onPress={onAddHighlight}
+          className="flex-row items-center justify-center gap-2 py-3 rounded-xl mt-2"
+          style={{
+            backgroundColor: '#27272a',
+            borderWidth: 1,
+            borderColor: '#3f3f46',
+            borderStyle: 'dashed',
+          }}
+        >
+          <Plus size={18} color="#a855f7" />
+          <Text className="text-purple-400 font-medium">Ajouter un point</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
