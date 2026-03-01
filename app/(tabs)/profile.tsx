@@ -145,7 +145,7 @@ export default function ProfilePage() {
       {/* ══════════════════════════════════════════
           CONTENT
       ══════════════════════════════════════════ */}
-      <View className="max-w-2xl mx-auto w-full px-4 py-5 gap-4">
+      <View className="max-w-2xl mx-auto w-full px-4 gap-4">
 
         {/* ── Carte utilisateur ── */}
         <View className="bg-zinc-900 rounded-2xl border border-zinc-800 p-5">
