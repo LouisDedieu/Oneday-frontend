@@ -331,7 +331,7 @@ export default function CityReviewPage() {
         [
           {
             text: 'OK',
-            onPress: () => router.replace(`/(tabs)/trips/city/${existingMatch.city_id}`),
+            onPress: () => router.replace('/(tabs)/trips'),
           },
         ]
       );
@@ -383,8 +383,8 @@ export default function CityReviewPage() {
         await syncCityData(city.id);
         await saveCity(user.id, city.id);
         setIsSaved(true);
-        // Replace to avoid stacking review page in history
-        router.replace(`/(tabs)/trips/city/${city.id}`);
+        // Replace to trips list to avoid stacking review page in history
+        router.replace('/(tabs)/trips');
       }
     } catch (err: any) {
       Alert.alert('Erreur', err.message);

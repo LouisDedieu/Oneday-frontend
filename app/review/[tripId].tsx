@@ -617,8 +617,8 @@ export default function ReviewModePage() {
         await syncDestinations(trip.id);
         await saveTrip(user.id, trip.id);
         setIsSaved(true);
-        // Rediriger vers la page du trip après sauvegarde
-        router.push(`/(tabs)/trips/${trip.id}`);
+        // Rediriger vers la liste des trips après sauvegarde
+        router.replace('/(tabs)/trips');
       }
     } catch (err: any) {
       Alert.alert('Erreur', err.message);
