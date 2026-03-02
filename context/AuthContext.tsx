@@ -3,9 +3,10 @@ import { supabase } from '../lib/supabase';
 import type { Session, AuthError } from '@supabase/supabase-js';
 import { Linking, Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { syncJwtToSharedStorage } from '../lib/syncJwtToSharedStorage';
 
-const OAUTH_REDIRECT_URI = 'bombomobile://auth/callback';
+const OAUTH_REDIRECT_URI = 'oneday://auth/callback';
 
 export interface User {
   id: string;
@@ -30,6 +31,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUp: (email: string, password: string) => Promise<{ error: AuthError | null; emailSent: boolean }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
+  signInWithApple: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: AuthError | null }>;
@@ -298,6 +300,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const signInWithApple = useCallback(async () => {
+    try {
+      // Check if Apple Sign-In is available on this device
+      const isAvailable = await AppleAuthentication.isAvailableAsync();
+      if (!isAvailable) {
+        return { error: new Error('Apple Sign-In is not available on this device') };
+      }
+
+      // Request credentials from Apple
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      if (!credential.identityToken) {
+        return { error: new Error('No identity token received from Apple') };
+      }
+
+      // Sign in with Supabase using the Apple identity token
+      const { data: sessionData, error: sessionError } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+      });
+
+      if (sessionError) return { error: sessionError };
+
+      // Update auth state
+      if (sessionData.session) {
+        setUser(sessionToUser(sessionData.session));
+        setStatus('authenticated');
+        // Sync JWT to shared storage for iOS Share Extension
+        if (Platform.OS === 'ios') {
+          syncJwtToSharedStorage();
+        }
+      }
+
+      return { error: null };
+    } catch (err) {
+      // Handle user cancellation
+      if (err instanceof Error && err.message.includes('ERR_REQUEST_CANCELED')) {
+        return { error: new Error('Authentication cancelled') };
+      }
+      console.error('[Auth] Apple sign-in error:', err);
+      return { error: err instanceof Error ? err : new Error('Unknown error') };
+    }
+  }, []);
+
   const signOut = useCallback(async () => {
     if (TEST_MODE) {
       console.warn('[Auth] Sign-out disabled in test mode');
@@ -341,6 +392,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signIn,
       signUp,
       signInWithGoogle,
+      signInWithApple,
       signOut,
       resetPassword,
       updatePassword,

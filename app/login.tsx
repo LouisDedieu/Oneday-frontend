@@ -23,6 +23,7 @@ import {
   ActivityIndicator,
  Linking } from 'react-native';
 import { Eye, EyeOff, ArrowLeft, MailCheck, AlertCircle, CheckCircle2 } from 'lucide-react-native';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import {useAuth} from "@/context/AuthContext";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -161,7 +162,7 @@ function Field({
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function Login() {
-  const { signIn, signUp, signInWithGoogle, resetPassword, resendConfirmation, isAuthenticated, status } = useAuth();
+  const { signIn, signUp, signInWithGoogle, signInWithApple, resetPassword, resendConfirmation, isAuthenticated, status } = useAuth();
 
   const [flow,          setFlow]         = useState<Flow>('signin');
   const [email,         setEmail]        = useState('');
@@ -169,6 +170,8 @@ export default function Login() {
   const [showPass,      setShowPass]     = useState(false);
   const [loading,       setLoading]      = useState(false);
   const [socialLoading, setSocialLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
+  const [appleAvailable, setAppleAvailable] = useState(false);
   const [error,         setError]        = useState<string | null>(null);
   const [successMsg,    setSuccessMsg]   = useState<string | null>(null);
   const [emailSent,     setEmailSent]    = useState(false);
@@ -176,6 +179,11 @@ export default function Login() {
   const [resending,     setResending]    = useState(false);
 
   const emailRef = useRef<TextInput>(null);
+
+  // Check if Apple Sign-In is available on this device
+  useEffect(() => {
+    AppleAuthentication.isAvailableAsync().then(setAppleAvailable);
+  }, []);
 
   // Détection post-confirmation via deep link (?confirmed=true)
   useEffect(() => {
@@ -263,6 +271,17 @@ export default function Login() {
     const { error } = await signInWithGoogle();
     setSocialLoading(false);
     if (error) setError('Connexion Google impossible. Réessayez.');
+  };
+
+  // ── Apple Sign-In ──────────────────────────────────────────────────────────
+  const handleAppleSignIn = async () => {
+    setAppleLoading(true);
+    setError(null);
+    const { error } = await signInWithApple();
+    setAppleLoading(false);
+    if (error && !error.message.includes('cancelled')) {
+      setError('Connexion Apple impossible. Réessayez.');
+    }
   };
 
   // ── Loading (vérification session initiale) ────────────────────────────────
@@ -526,7 +545,7 @@ export default function Login() {
               <TouchableOpacity
                 className={`flex-row items-center justify-center gap-3 border border-zinc-700 bg-zinc-900 rounded-[10px] h-[46px] ${socialLoading ? 'opacity-50' : ''}`}
                 onPress={handleGoogleSignIn}
-                disabled={socialLoading || loading}
+                disabled={socialLoading || loading || appleLoading}
                 activeOpacity={0.8}
               >
                 {socialLoading
@@ -537,6 +556,24 @@ export default function Login() {
                     </>
                 }
               </TouchableOpacity>
+
+              {/* Apple Sign-In - Only shown on iOS devices that support it */}
+              {appleAvailable && (
+                <TouchableOpacity
+                  className={`flex-row items-center justify-center gap-3 border border-zinc-700 bg-zinc-900 rounded-[10px] h-[46px] ${appleLoading ? 'opacity-50' : ''}`}
+                  onPress={handleAppleSignIn}
+                  disabled={appleLoading || loading || socialLoading}
+                  activeOpacity={0.8}
+                >
+                  {appleLoading
+                    ? <ActivityIndicator size="small" color="#a1a1aa" />
+                    : <>
+                        <Text style={{ fontSize: 18, color: '#fff' }}></Text>
+                        <Text className="text-zinc-300 text-[15px] font-medium">Continuer avec Apple</Text>
+                      </>
+                  }
+                </TouchableOpacity>
+              )}
             </>
           )}
 
