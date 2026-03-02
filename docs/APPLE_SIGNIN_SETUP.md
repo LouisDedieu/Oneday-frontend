@@ -12,7 +12,7 @@ This document explains how to complete Apple Sign-In integration once you have a
 
 ## Step 1: Configure App ID in Apple Developer Portal
 
-1. Go to **Certificates, Identifiers & Profiles** > **Identifiers**
+1. Go to **Certificates, Identifiers & Profiles**(https://developer.apple.com/account/resources) > **Identifiers**
 2. Select your App ID (`com.onedaytravel.app`) or create it if it doesn't exist
 3. Enable **Sign in with Apple** capability
 4. Click **Save**
