@@ -103,7 +103,7 @@ export default function ShareScreen(props: InitialProps) {
 
     try {
       const jwt = await SecureStore.getItemAsync('supabase_jwt', {
-        accessGroup: 'group.com.oneday.app.shared',
+        accessGroup: 'group.com.onedaytravel.app.shared',
       });
 
       // Extract user_id from JWT payload (sub claim) instead of reading separately
