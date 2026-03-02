@@ -15,19 +15,26 @@
 import React from 'react';
 import EventSource, { type EventSourceEvent } from 'react-native-sse';
 import { AnalysisResponse, AnalysisError, EntityType } from '../types/api';
+import { supabase } from '../lib/supabase';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
 const API_BASE: string =
   process.env.EXPO_PUBLIC_API_BASE ?? 'http://localhost:8000';
 
-/** Headers envoyés avec chaque requête — inclut le bypass ngrok */
+/** Headers de base sans auth */
 const BASE_HEADERS: Record<string, string> = {
   'Content-Type': 'application/json',
-  // Empêche ngrok de renvoyer sa page HTML d'avertissement.
-  // Sans effet hors ngrok.
   'ngrok-skip-browser-warning': 'true',
 };
+
+/** Récupère le JWT courant et construit les headers avec Authorization */
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error('Non authentifié');
+  return { ...BASE_HEADERS, Authorization: `Bearer ${token}` };
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -86,9 +93,10 @@ export async function analyzeVideoUrl(
       body.entity_type_override = entityTypeOverride;
     }
 
+    const authHeaders = await getAuthHeaders();
     const startRes = await fetch(`${API_BASE}${endpoint}`, {
       method:  'POST',
-      headers: BASE_HEADERS,
+      headers: authHeaders,
       body:    JSON.stringify(body),
     });
 
@@ -107,7 +115,8 @@ export async function analyzeVideoUrl(
   }
 
   // ── Étape 2 : streamer les mises à jour SSE ────────────────────────────────
-  return streamJobUpdates(job_id, callbacks);
+  const authHeaders = await getAuthHeaders();
+  return streamJobUpdates(job_id, authHeaders, callbacks);
 }
 
 // ── SSE streaming (react-native-sse — supporte les headers) ───────────────────
@@ -119,6 +128,7 @@ export async function analyzeVideoUrl(
  */
 function streamJobUpdates(
   jobId: string,
+  headers: Record<string, string>,
   callbacks?: AnalysisCallbacks,
 ): Promise<AnalysisResponse> {
   return new Promise((resolve, reject) => {
@@ -140,9 +150,7 @@ function streamJobUpdates(
     }, 30 * 60 * 1_000);
 
     const es = new EventSource(`${API_BASE}/analyze/stream/${jobId}`, {
-      headers:        BASE_HEADERS,
-      // react-native-sse reconnecte automatiquement sur coupure réseau,
-      // ce qui reproduit le comportement de fetchEventSource avec onerror.
+      headers,
       withCredentials: false,
     });
 
@@ -244,9 +252,10 @@ export async function analyzeVideoUrlPolling(
 ): Promise<AnalysisResponse> {
   const endpoint = useTestRoute ? '/test/analyze/url' : '/analyze/url';
 
+  const authHeaders = await getAuthHeaders();
   const startRes = await fetch(`${API_BASE}${endpoint}`, {
     method:  'POST',
-    headers: BASE_HEADERS,
+    headers: authHeaders,
     body:    JSON.stringify({ url }),
   });
 
