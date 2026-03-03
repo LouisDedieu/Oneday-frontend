@@ -106,7 +106,7 @@ export function CityHighlightsMap({
     const queries = [];
 
     if (highlight.address) {
-      queries.push(highlight.address);
+      // Always include city context — bare address alone can match wrong country
       queries.push(`${highlight.address}, ${cityContext}`);
     }
 

@@ -84,18 +84,18 @@ cd ios && pod install && cd ..
 #### 4. Ouvrir le projet dans Xcode
 
 ```bash
-open ios/BomboMobile.xcworkspace
+open ios/Oneday.xcworkspace
 ```
 
 **Important** : Ouvrir le fichier `.xcworkspace` et non `.xcodeproj`.
 
 #### 5. Configurer la signature dans Xcode
 
-1. Dans Xcode, sélectionner le projet **BomboMobile** dans le navigateur
+1. Dans Xcode, sélectionner le projet **Oneday** dans le navigateur
 2. Aller dans l'onglet **Signing & Capabilities**
 3. Cocher **Automatically manage signing**
 4. Sélectionner votre **Team** (compte Apple Developer)
-5. Si le Bundle Identifier est pris, le modifier (ex: `com.votrenom.bombomobile`)
+5. Si le Bundle Identifier est pris, le modifier (ex: `com.votrenom.oneday`)
 
 #### 6. Préparer l'iPhone
 

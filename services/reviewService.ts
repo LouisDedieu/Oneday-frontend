@@ -13,6 +13,10 @@ export interface DbSpot {
   highlight: boolean;
   latitude: number | null;
   longitude: number | null;
+  // Lien vers la ville source (pour navigation et sync)
+  source_city_id: string | null;
+  city_highlight_id: string | null;
+  _synced_from_highlight?: boolean;
 }
 
 export interface DbDay {
@@ -77,4 +81,68 @@ export async function updateSpot(spotId: string, payload: SpotUpdatePayload): Pr
 
 export async function deleteSpot(spotId: string): Promise<void> {
   await apiDelete(`/review/spots/${spotId}`);
+}
+
+// ── Add city to trip ─────────────────────────────────────────────────────────
+
+export interface AddCityToTripPayload {
+  city_id: string;
+  day_id?: string;
+  create_new_day?: boolean;
+}
+
+export interface AddCityToTripResult {
+  added: boolean;
+  spots_count: number;
+  day_id: string;
+  city_name: string;
+}
+
+export async function addCityToTrip(
+  tripId: string,
+  payload: AddCityToTripPayload
+): Promise<AddCityToTripResult> {
+  return apiPost<AddCityToTripResult>(`/review/${tripId}/add-city`, payload);
+}
+
+// ── Add new destination (manual city) ────────────────────────────────────────
+
+export interface AddDestinationPayload {
+  city_name: string;
+  country?: string;
+  latitude: number;
+  longitude: number;
+}
+
+export interface AddDestinationResult {
+  added: boolean;
+  destination_id: string;
+  day_id: string;
+  city_name: string;
+}
+
+export async function addDestinationToTrip(
+  tripId: string,
+  payload: AddDestinationPayload
+): Promise<AddDestinationResult> {
+  return apiPost<AddDestinationResult>(`/review/${tripId}/add-destination`, payload);
+}
+
+// ── Delete destination ────────────────────────────────────────────────────────
+
+export async function deleteDestination(tripId: string, destId: string): Promise<void> {
+  await apiDelete(`/review/${tripId}/destinations/${destId}`);
+}
+
+// ── Reorder destinations ──────────────────────────────────────────────────────
+
+export interface ReorderDestinationsPayload {
+  destinations: Array<{ id: string; order: number }>;
+}
+
+export async function reorderDestinations(
+  tripId: string,
+  payload: ReorderDestinationsPayload
+): Promise<void> {
+  await apiPatch(`/review/${tripId}/destinations/reorder`, payload);
 }

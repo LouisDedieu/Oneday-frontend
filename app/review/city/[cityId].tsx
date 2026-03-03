@@ -15,6 +15,8 @@ import {
   Easing,
   Linking,
   Alert,
+  TextInput,
+  Modal,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,6 +29,7 @@ import {
   Trash2,
   Merge,
   X,
+  Plus,
 } from 'lucide-react-native';
 import DraggableFlatList, {
   ScaleDecorator,
@@ -42,8 +45,10 @@ import {
   reorderHighlights,
   syncCityData,
   setHighlightValidated,
+  createHighlight,
   type DbCity,
   type HighlightUpdatePayload,
+  type CreateHighlightPayload,
 } from '@/services/cityReviewService';
 import { Highlight, HighlightCategory, HIGHLIGHT_CATEGORIES } from '@/types/api';
 import { HighlightReviewCard } from '@/components/city/HighlightReviewCard';
@@ -94,6 +99,15 @@ export default function CityReviewPage() {
   } | null>(null);
   const [merging, setMerging] = useState(false);
   const [showMergeBanner, setShowMergeBanner] = useState(true);
+
+  // Add highlight state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addingHighlight, setAddingHighlight] = useState(false);
+  const [newHighlight, setNewHighlight] = useState<CreateHighlightPayload>({
+    name: '',
+    category: 'other',
+    address: '',
+  });
 
   // Load city data
   useEffect(() => {
@@ -317,7 +331,7 @@ export default function CityReviewPage() {
         [
           {
             text: 'OK',
-            onPress: () => router.replace(`/(tabs)/trips/city/${existingMatch.city_id}`),
+            onPress: () => router.replace('/(tabs)/trips'),
           },
         ]
       );
@@ -327,6 +341,35 @@ export default function CityReviewPage() {
       setMerging(false);
     }
   }, [existingMatch, cityId, city, router]);
+
+  // Add new highlight
+  const handleAddHighlight = useCallback(async () => {
+    if (!cityId || !newHighlight.name.trim()) return;
+
+    setAddingHighlight(true);
+    try {
+      const created = await createHighlight(cityId, {
+        ...newHighlight,
+        name: newHighlight.name.trim(),
+        address: newHighlight.address?.trim() || undefined,
+      });
+      // Add to local state
+      setCity((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          highlights: [...prev.highlights, created],
+        };
+      });
+      // Reset form and close modal
+      setNewHighlight({ name: '', category: 'other', address: '' });
+      setShowAddModal(false);
+    } catch (err: any) {
+      Alert.alert('Erreur', err.message || 'Impossible de créer le point');
+    } finally {
+      setAddingHighlight(false);
+    }
+  }, [cityId, newHighlight]);
 
   // Save/unsave
   const handleValidate = async () => {
@@ -340,8 +383,8 @@ export default function CityReviewPage() {
         await syncCityData(city.id);
         await saveCity(user.id, city.id);
         setIsSaved(true);
-        // Replace to avoid stacking review page in history
-        router.replace(`/(tabs)/trips/city/${city.id}`);
+        // Replace to trips list to avoid stacking review page in history
+        router.replace('/(tabs)/trips');
       }
     } catch (err: any) {
       Alert.alert('Erreur', err.message);
@@ -538,6 +581,21 @@ export default function CityReviewPage() {
                 categoryCounts={categoryCounts}
                 onToggle={handleToggleCategory}
               />
+
+              {/* Add highlight button */}
+              <TouchableOpacity
+                onPress={() => setShowAddModal(true)}
+                className="mx-4 mt-3 flex-row items-center justify-center gap-2 py-3 rounded-xl"
+                style={{
+                  backgroundColor: '#27272a',
+                  borderWidth: 1,
+                  borderColor: '#3f3f46',
+                  borderStyle: 'dashed',
+                }}
+              >
+                <Plus size={18} color="#a855f7" />
+                <Text className="text-purple-400 font-medium">Ajouter un point</Text>
+              </TouchableOpacity>
             </View>
           }
           ListEmptyComponent={
@@ -583,6 +641,105 @@ export default function CityReviewPage() {
             )}
           </TouchableOpacity>
         </View>
+
+        {/* ── Add Highlight Modal ── */}
+        <Modal
+          visible={showAddModal}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setShowAddModal(false)}
+        >
+          <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+            <View
+              className="bg-zinc-900 rounded-t-3xl p-4"
+              style={{ paddingBottom: insets.bottom + 16 }}
+            >
+              {/* Header */}
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-lg font-bold text-white">Ajouter un point</Text>
+                <TouchableOpacity onPress={() => setShowAddModal(false)} className="p-2">
+                  <X size={20} color="#71717a" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Form */}
+              <View className="gap-4">
+                {/* Name */}
+                <View>
+                  <Text className="text-xs text-zinc-500 uppercase mb-1">Nom *</Text>
+                  <TextInput
+                    value={newHighlight.name}
+                    onChangeText={(v) => setNewHighlight((f) => ({ ...f, name: v }))}
+                    placeholder="Ex: Tour Eiffel, Cafe de Flore..."
+                    placeholderTextColor="#52525b"
+                    className="rounded-lg px-3 py-3 text-white"
+                    style={{ backgroundColor: '#27272a', borderWidth: 1, borderColor: '#3f3f46' }}
+                  />
+                </View>
+
+                {/* Category */}
+                <View>
+                  <Text className="text-xs text-zinc-500 uppercase mb-1">Catégorie</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View className="flex-row gap-2">
+                      {(Object.keys(HIGHLIGHT_CATEGORIES) as HighlightCategory[]).map((cat) => {
+                        const isSelected = newHighlight.category === cat;
+                        const catColor = CATEGORY_COLORS[cat];
+                        return (
+                          <TouchableOpacity
+                            key={cat}
+                            onPress={() => setNewHighlight((f) => ({ ...f, category: cat }))}
+                            className="px-3 py-2 rounded-lg"
+                            style={{
+                              backgroundColor: isSelected ? `${catColor}33` : '#27272a',
+                              borderWidth: 1,
+                              borderColor: isSelected ? `${catColor}4D` : '#3f3f46',
+                            }}
+                          >
+                            <Text style={{ fontSize: 13, color: isSelected ? catColor : '#a1a1aa' }}>
+                              {HIGHLIGHT_CATEGORIES[cat].label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </ScrollView>
+                </View>
+
+                {/* Address */}
+                <View>
+                  <Text className="text-xs text-zinc-500 uppercase mb-1">Adresse</Text>
+                  <TextInput
+                    value={newHighlight.address ?? ''}
+                    onChangeText={(v) => setNewHighlight((f) => ({ ...f, address: v }))}
+                    placeholder="Optionnel"
+                    placeholderTextColor="#52525b"
+                    className="rounded-lg px-3 py-3 text-white"
+                    style={{ backgroundColor: '#27272a', borderWidth: 1, borderColor: '#3f3f46' }}
+                  />
+                </View>
+
+                {/* Submit */}
+                <TouchableOpacity
+                  onPress={handleAddHighlight}
+                  disabled={addingHighlight || !newHighlight.name.trim()}
+                  className="flex-row items-center justify-center gap-2 py-3 rounded-xl mt-2"
+                  style={{
+                    backgroundColor: '#a855f7',
+                    opacity: !newHighlight.name.trim() ? 0.5 : 1,
+                  }}
+                >
+                  {addingHighlight ? (
+                    <SpinningLoader size={16} color="#fff" />
+                  ) : (
+                    <Plus size={18} color="#fff" />
+                  )}
+                  <Text className="text-white font-medium">Ajouter</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     </GestureHandlerRootView>
   );

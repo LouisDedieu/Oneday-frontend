@@ -16,8 +16,14 @@ import {
   Animated,
   Easing,
   Alert,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Constants from 'expo-constants';
+
+// Check if using native tabs (iOS 26+) which handles safe area automatically
+const isExpoGo = Constants.appOwnership === 'expo';
+const useNativeTabs = Platform.OS === 'ios' && parseInt(String(Platform.Version), 10) >= 26 && !isExpoGo;
 import { useRouter, useFocusEffect } from 'expo-router';
 import {
   Map,
@@ -454,7 +460,7 @@ export default function SavedPage() {
         contentContainerStyle={{
           paddingHorizontal: 16,
           paddingTop: 16,
-          paddingBottom: 16,
+          paddingBottom: insets.bottom + 16,
           gap: 16,
         }}
         refreshControl={

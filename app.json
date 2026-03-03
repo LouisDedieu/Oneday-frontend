@@ -1,22 +1,24 @@
 {
   "expo": {
-    "name": "BomboMobile",
-    "slug": "BomboMobile",
+    "name": "Oneday",
+    "slug": "oneday",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "bombomobile",
+    "scheme": "oneday",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.BomboMobile",
+      "bundleIdentifier": "com.onedaytravel.mobile",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
-        "com.apple.security.application-groups": ["group.com.anonymous.BomboMobile.shared"]
-      }
+        "com.apple.security.application-groups": ["group.com.onedaytravel.mobile.shared"],
+        "com.apple.developer.applesignin": ["Default"]
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "adaptiveIcon": {
@@ -27,7 +29,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.BomboMobile"
+      "package": "com.onedaytravel.mobile"
     },
     "web": {
       "output": "static",
@@ -35,6 +37,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-apple-authentication",
       [
         "expo-splash-screen",
         {

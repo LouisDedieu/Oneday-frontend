@@ -1,12 +1,12 @@
 # Bombo - État des lieux de l'application
 
-> Dernière mise à jour : Février 2025
+> Dernière mise à jour : Mars 2025
 
 ---
 
 ## Vue d'ensemble
 
-**Bombo** est une application mobile d'extraction d'itinéraires de voyage utilisant l'IA. Elle analyse des vidéos de voyage (TikTok, Instagram Reels, YouTube) pour en extraire automatiquement des itinéraires structurés que les utilisateurs peuvent sauvegarder et personnaliser.
+**Bombo** est une application mobile d'extraction d'itinéraires de voyage utilisant l'IA. Elle analyse des vidéos de voyage (TikTok, Instagram Reels, YouTube) pour en extraire automatiquement des itinéraires structurés que les utilisateurs peuvent sauvegarder et personnaliser. L'application permet également de gérer des **villes** avec leurs points d'intérêt (highlights), de les fusionner et de les intégrer dans des trips existants.
 
 ---
 
@@ -14,13 +14,15 @@
 
 | Couche | Technologies |
 |--------|--------------|
-| **Frontend** | React Native + Expo 54, TypeScript 5.9 |
+| **Frontend** | React Native 0.81.5 + Expo 54, React 19.1, TypeScript 5.9 |
 | **Routing** | Expo Router v6 (file-based) |
 | **Styling** | NativeWind v4.2.1 (Tailwind pour RN) |
-| **Auth** | Supabase (JWT, AsyncStorage) |
+| **Auth** | Supabase (JWT, AsyncStorage, Secure Store) |
 | **Backend** | FastAPI (hébergé sur Render) |
 | **Maps** | React Native Maps v1.20.1 |
 | **Animations** | Reanimated v4.1.1 |
+| **Drag & Drop** | react-native-draggable-flatlist v4.0.3 |
+| **Icons** | Lucide React Native v0.574.0, Expo Vector Icons |
 | **Build** | EAS (Expo Application Services) |
 
 ---
@@ -28,22 +30,49 @@
 ## Architecture du Projet
 
 ```
-app/                    # Routes Expo Router
-├── (tabs)/             # Navigation par onglets (Inbox, Trips, Profile)
-├── review/[tripId]     # Page de validation des trips
-└── login, reset-password
+app/                         # Routes Expo Router
+├── (tabs)/                  # Navigation par onglets
+│   ├── index.tsx            # Inbox - Analyses en cours
+│   ├── trips/               # Gestion des trips et villes
+│   │   ├── index.tsx        # Liste trips/villes sauvegardés
+│   │   ├── [tripId].tsx     # Détail d'un trip
+│   │   └── city/            # Routes pour les villes
+│   │       └── [cityId].tsx # Détail d'une ville
+│   └── profile.tsx          # Profil utilisateur
+├── review/                  # Pages de validation
+│   ├── [tripId].tsx         # Review trip
+│   └── city/[cityId].tsx    # Review ville
+└── login, reset-password    # Auth
 
-components/             # Composants réutilisables
-context/AuthContext     # Gestion de l'état d'authentification
-services/               # Logique métier (tripService, analysisService, reviewService)
-lib/                    # Utilitaires (api.ts, supabase.ts)
-share-extension/        # Extension de partage iOS/Android
+components/                  # Composants réutilisables
+├── city/                    # Composants ville (NEW)
+│   ├── CategoryFilterChips.tsx
+│   ├── HighlightCard.tsx
+│   ├── HighlightReviewCard.tsx
+│   ├── CityHighlightsMap.tsx
+│   └── CityBudgetCard.tsx
+├── trip/                    # Composants trip
+│   └── AddCityToTripModal.tsx (NEW)
+└── ...
+
+services/                    # Logique métier
+├── tripService.ts           # CRUD trips
+├── reviewService.ts         # Édition trips
+├── cityService.ts           # CRUD villes (NEW)
+├── cityReviewService.ts     # Édition villes (NEW)
+├── analysisService.ts       # Analyses IA
+└── savedService.ts          # Collection utilisateur
+
+context/AuthContext          # État d'authentification
+lib/                         # Utilitaires (api.ts, supabase.ts)
+share-extension/             # Extension de partage iOS/Android
 ```
 
 ---
 
 ## Fonctionnalités Principales
 
+### Fonctionnalités Existantes
 1. **Authentification** - Email/password via Supabase, confirmation email, reset password
 2. **Inbox** - Liste des analyses en cours avec polling temps réel (15s)
 3. **Analyse Vidéo** - SSE streaming pour suivre la progression (0-100%)
@@ -52,15 +81,64 @@ share-extension/        # Extension de partage iOS/Android
 6. **Share Extension** - Partage direct depuis TikTok/Instagram vers l'app (iOS & Android)
 7. **Profil** - Stats utilisateur (trips créés, sauvegardés, vues)
 
+### Nouvelles Fonctionnalités (Mars 2025)
+8. **Gestion des Villes** - CRUD complet des villes avec highlights
+9. **Highlights CRUD** - Créer, modifier, supprimer des points d'intérêt
+10. **Système de Merge** - Détection et fusion de villes dupliquées
+11. **Drag & Drop** - Réordonner les highlights par glisser-déposer
+12. **Filtrage par catégorie** - Food, Culture, Nature, Shopping, Nightlife, Other
+13. **Géocodage automatique** - LocationIQ API pour convertir adresses en coordonnées
+14. **Cartes interactives villes** - Visualisation des highlights sur carte
+15. **Intégration Trip-Ville** - Ajouter des villes sauvegardées à un trip
+16. **Navigation iOS 26+** - Support Liquid Glass tabs natifs
+
 ---
 
 ## Endpoints Backend Utilisés
 
+### Trips
 - `POST /analyze/url` → Lance l'analyse
 - `GET /analyze/stream/{job_id}` → SSE temps réel
 - `GET /inbox` → Jobs de l'utilisateur
 - `GET/POST/DELETE /trips` → CRUD trips
+- `GET /trips/{tripId}` → Détail trip complet
+- `GET /trips/saved` → Trips sauvegardés
+- `POST /trips/{tripId}/save` → Sauvegarder un trip
+- `DELETE /trips/{tripId}/save` → Retirer de la collection
+
+### Review Trips
+- `GET /review/{tripId}` → Trip pour édition
+- `PATCH /review/days/{dayId}/validate` → Inclure/exclure un jour
 - `PATCH /review/spots/{spotId}` → Édition spots
+- `PATCH /review/spots/{spotId}/coordinates` → MAJ GPS spot
+- `DELETE /review/spots/{spotId}` → Suppression spot
+- `POST /review/{tripId}/sync` → Sync coordonnées GPS
+- `POST /review/{tripId}/destinations` → Ajouter destination (NEW)
+- `DELETE /review/{tripId}/destinations/{destId}` → Supprimer destination (NEW)
+- `PATCH /review/{tripId}/destinations/reorder` → Réordonner destinations (NEW)
+- `POST /review/{tripId}/add-city` → Ajouter une ville au trip (NEW)
+
+### Villes (NEW)
+- `GET /cities/{cityId}` → Détail ville avec highlights
+- `DELETE /cities/{cityId}` → Suppression ville
+- `GET /cities/saved` → Villes sauvegardées (paginé)
+- `GET /cities/{cityId}/saved` → Vérifie si sauvegardée
+- `POST /cities/{cityId}/save` → Sauvegarder ville
+- `DELETE /cities/{cityId}/save` → Retirer de collection
+- `PATCH /cities/{cityId}/coordinates` → MAJ GPS ville
+- `GET /cities/match?name=` → Détection ville existante (merge)
+- `POST /cities/{targetId}/merge` → Fusionner deux villes
+
+### Review Villes (NEW)
+- `GET /review/city/{cityId}` → Ville pour édition
+- `POST /review/city/{cityId}/highlights` → Créer highlight
+- `PATCH /review/highlights/{highlightId}` → Éditer highlight
+- `PATCH /review/highlights/{highlightId}/coordinates` → MAJ GPS highlight
+- `PATCH /review/highlights/{highlightId}/validate` → Valider/invalider
+- `PATCH /review/highlights/{highlightId}/category` → Changer catégorie
+- `DELETE /review/highlights/{highlightId}` → Supprimer highlight
+- `PATCH /review/city/{cityId}/highlights/reorder` → Réordonner highlights
+- `POST /review/city/{cityId}/sync` → Sync données (supprime non-validés)
 
 ---
 
@@ -68,10 +146,10 @@ share-extension/        # Extension de partage iOS/Android
 
 | Aspect | Status |
 |--------|--------|
-| **Branche** | `feature-share-extension` |
-| **Dernier commit** | `f92c5f1` - Add share extension for iOS and Android |
+| **Branche** | `city-itinerary-management` |
+| **Derniers commits** | `1f52996` - Remove unnecessary padding from user profile view |
 | **Git status** | Clean (pas de modifications en cours) |
-| **Plateforme iOS** | iOS 15.1+ avec Share Extension native |
+| **Plateforme iOS** | iOS 15.1+ avec Share Extension native, Liquid Glass tabs (iOS 26+) |
 | **Plateforme Android** | Support Share Intent |
 
 ---
@@ -84,6 +162,10 @@ share-extension/        # Extension de partage iOS/Android
 - Mode test/dev configurable via variables d'environnement
 - Animations fluides avec Reanimated
 - Support multi-plateforme (iOS, Android, Web limité)
+- **Système de merge intelligent** pour éviter les doublons de villes
+- **Géocodage automatique** des adresses
+- **Drag & Drop** pour réorganiser les contenus
+- **Refresh automatique** des données au focus des écrans
 
 ---
 
@@ -92,6 +174,7 @@ share-extension/        # Extension de partage iOS/Android
 - **Supabase** - BDD PostgreSQL + Auth
 - **LocationIQ** - Géocodage des adresses
 - **Render** - Hébergement backend FastAPI
+- **Apple Maps / Google Maps / Waze** - Liens de navigation depuis les spots
 
 ---
 
@@ -108,6 +191,17 @@ share-extension/        # Extension de partage iOS/Android
 │   (TikTok,       (SSE)         (édition spots)       (trips saved)   (détail)
 │    Instagram)                                                               │
 │                                                                             │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                    NOUVEAU : FLUX VILLES                            │   │
+│   ├─────────────────────────────────────────────────────────────────────┤   │
+│   │ Vidéo ──► Analyse ──► Review Ville ──► Détection Merge ──► Save    │   │
+│   │                         ├── Validation highlights                   │   │
+│   │                         ├── Drag & Drop ordre                      │   │
+│   │                         └── Édition/Suppression                    │   │
+│   │                                                                     │   │
+│   │ Ville Saved ──► Détail ──► CRUD Highlights ──► Intégration Trip   │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -115,7 +209,7 @@ share-extension/        # Extension de partage iOS/Android
 
 ## 1. Modèles de Données
 
-### Types principaux (`types/api.ts`)
+### Types Trip (`types/api.ts`)
 
 ```typescript
 TripData {
@@ -132,6 +226,38 @@ TripData {
 }
 ```
 
+### Types City (NEW)
+
+```typescript
+CityData {
+  id: string
+  city_name: string
+  country?: string
+  latitude?: number
+  longitude?: number
+  highlights: Highlight[]
+  budget?: CityBudget
+  practical_info?: PracticalInfo
+  source_url?: string
+  content_creator_handle?: string
+}
+
+Highlight {
+  id: string
+  name: string
+  category: 'food' | 'culture' | 'nature' | 'shopping' | 'nightlife' | 'other'
+  description?: string
+  address?: string
+  latitude?: number
+  longitude?: number
+  price_range?: string
+  tips?: string
+  must_see?: boolean
+  validated?: boolean
+  order?: number
+}
+```
+
 ### Modèles de Review (`services/reviewService.ts`)
 
 | Entité | Champs clés |
@@ -140,11 +266,19 @@ TripData {
 | **DbDay** | `id`, `day_number`, `location`, `theme`, `accommodation_*`, `breakfast/lunch/dinner_spot`, `validated`, `spots[]` |
 | **DbSpot** | `id`, `name`, `spot_type`, `address`, `duration_minutes`, `price_range`, `tips`, `highlight`, `latitude`, `longitude` |
 
+### Modèles City Review (NEW - `services/cityReviewService.ts`)
+
+| Entité | Champs clés |
+|--------|-------------|
+| **DbCity** | `id`, `city_name`, `country`, `latitude`, `longitude`, `highlights[]`, `budget`, `practical_info` |
+| **HighlightUpdatePayload** | `name`, `category`, `description`, `address`, `price_range`, `tips`, `must_see` |
+| **CreateHighlightPayload** | Tous les champs pour créer un nouveau highlight |
+
 ---
 
 ## 2. Services Backend
 
-### tripService.ts - Opérations CRUD
+### tripService.ts - Opérations CRUD Trips
 
 | Fonction | Endpoint | Description |
 |----------|----------|-------------|
@@ -160,7 +294,22 @@ TripData {
 | `updateSpotCoordinates(...)` | `PATCH /review/spots/{spotId}/coordinates` | MAJ GPS d'un spot |
 | `updateDestinationCoordinates(...)` | `PATCH /review/destinations/{destId}/coordinates` | MAJ GPS destination |
 
-### reviewService.ts - Édition de trips
+### cityService.ts - Opérations CRUD Villes (NEW)
+
+| Fonction | Endpoint | Description |
+|----------|----------|-------------|
+| `getCity(cityId)` | `GET /cities/{cityId}` | Récupère une ville avec ses highlights |
+| `deleteCity(cityId)` | `DELETE /cities/{cityId}` | Suppression ville |
+| `getUserSavedCities(userId, page, limit)` | `GET /cities/saved` | Villes sauvegardées (paginé) |
+| `isCitySaved(userId, cityId)` | `GET /cities/{cityId}/saved` | Vérifie si sauvegardée |
+| `saveCity(userId, cityId)` | `POST /cities/{cityId}/save` | Sauvegarde ville |
+| `unsaveCity(userId, cityId)` | `DELETE /cities/{cityId}/save` | Retire de collection |
+| `toggleSaveCity(...)` | — | Toggle save/unsave |
+| `checkCityMatch(cityName)` | `GET /cities/match?name=` | Détection ville existante pour merge |
+| `mergeCities(targetId, sourceId, highlightIds, deleteSource)` | `POST /cities/{targetId}/merge` | Fusion deux villes |
+| `updateCityCoordinates(cityId, lat, lon)` | `PATCH /cities/{cityId}/coordinates` | MAJ GPS ville |
+
+### reviewService.ts - Édition de trips (ENHANCED)
 
 | Fonction | Endpoint | Description |
 |----------|----------|-------------|
@@ -169,12 +318,30 @@ TripData {
 | `syncDestinations(tripId)` | `POST /review/{tripId}/sync` | Synchronise les coordonnées GPS via LocationIQ |
 | `updateSpot(spotId, payload)` | `PATCH /review/spots/{spotId}` | MAJ nom, type, prix, tips, highlight, etc. |
 | `deleteSpot(spotId)` | `DELETE /review/spots/{spotId}` | Supprime un spot |
+| `addCityToTrip(tripId, payload)` | `POST /review/{tripId}/add-city` | **NEW** - Ajoute ville au trip |
+| `addDestinationToTrip(tripId, payload)` | `POST /review/{tripId}/destinations` | **NEW** - Ajoute destination |
+| `deleteDestination(tripId, destId)` | `DELETE /review/{tripId}/destinations/{destId}` | **NEW** - Supprime destination |
+| `reorderDestinations(tripId, payload)` | `PATCH /review/{tripId}/destinations/reorder` | **NEW** - Réordonne destinations |
+
+### cityReviewService.ts - Édition de villes (NEW)
+
+| Fonction | Endpoint | Description |
+|----------|----------|-------------|
+| `fetchCityForReview(cityId)` | `GET /review/city/{cityId}` | Ville avec tous les highlights |
+| `createHighlight(cityId, payload)` | `POST /review/city/{cityId}/highlights` | Crée nouveau highlight |
+| `updateHighlight(highlightId, payload)` | `PATCH /review/highlights/{highlightId}` | MAJ highlight |
+| `updateHighlightCoordinates(highlightId, lat, lon)` | `PATCH /review/highlights/{highlightId}/coordinates` | MAJ GPS highlight |
+| `setHighlightValidated(highlightId, validated)` | `PATCH /review/highlights/{highlightId}/validate` | Valide/invalide |
+| `setHighlightCategory(highlightId, category)` | `PATCH /review/highlights/{highlightId}/category` | Change catégorie |
+| `deleteHighlight(highlightId)` | `DELETE /review/highlights/{highlightId}` | Supprime highlight |
+| `reorderHighlights(cityId, highlights)` | `PATCH /review/city/{cityId}/highlights/reorder` | Réordonne (drag & drop) |
+| `syncCityData(cityId)` | `POST /review/city/{cityId}/sync` | Supprime non-validés, recalcule ordre |
 
 ---
 
 ## 3. Pages et Composants
 
-### `/app/(tabs)/trips/index.tsx` - Liste des trips sauvegardés
+### `/app/(tabs)/trips/index.tsx` - Liste des trips et villes sauvegardés
 
 **Fonctionnalités :**
 - Affichage en `FlatList` avec animations staggerées (80ms par carte)
@@ -182,6 +349,7 @@ TripData {
 - Rechargement automatique au focus (useFocusEffect)
 - Suppression avec confirmation (Alert)
 - État vide animé avec message d'onboarding
+- **Support trips ET villes dans la même liste**
 
 **Composant `TripCard` :**
 ```
@@ -221,7 +389,9 @@ TripData {
 │ 📅 Xj    📍 X villes    🧭 X lieux          │
 │ Créateur: @handle  [Voir la vidéo →]        │
 ├─────────────────────────────────────────────┤
-│ Étapes du voyage (multi-stop)               │
+│ [+ Ajouter une ville] (NEW)                 │
+├─────────────────────────────────────────────┤
+│ Étapes du voyage (multi-stop, réordonnables)│
 │  ① Paris, France (3 jours)                  │
 │  │                                          │
 │  ② Lyon, France (2 jours)                   │
@@ -233,100 +403,115 @@ TripData {
 └─────────────────────────────────────────────┘
 ```
 
-**Composant `SpotCard` :**
-- Emoji selon `spot_type` (restaurant 🍽️, bar 🍷, hotel 🏨, attraction 🏛️, etc.)
-- Badge "highlight" avec ⭐
-- Badge "verified" avec ✓
-- Durée, prix coloré (gratuit → luxe)
-- Tips en italique bleu
-- Lien Google Maps si coordonnées disponibles
-
-**Section Budget :**
-- Hero card avec total estimé + fourchette par jour
-- Répartition : 🏨 Hébergement, 🍽️ Nourriture, 🚗 Transport, 🎯 Activités
-- 💡 Conseils pour économiser
-
-**Section Pratique :**
-- Visa (requis/non requis avec icône couleur)
-- Devise locale, langue
-- 📱 Apps utiles (badges)
-- 📦 À emporter (tags)
-- 🛡️ Conseils sécurité
-- ⚠️ À éviter (rouge)
-
-**Section Transport (Logistics) :**
-- Timeline verticale avec numéros
-- Emoji par mode (✈️ avion, 🚆 train, 🚌 bus, 🚗 voiture, ⛴️ ferry, etc.)
-- Trajet "From → To" avec durée et coût
-- Tips par trajet
+**Nouveau : AddCityToTripModal**
+- Recherche dans les villes sauvegardées
+- Aperçu des highlights de la ville
+- Sélection du jour d'intégration
+- Création automatique des spots depuis highlights
 
 ---
 
-### `/app/review/[tripId].tsx` - Validation et édition
+### `/app/(tabs)/trips/city/[cityId].tsx` - Détail d'une ville (NEW)
+
+**Structure avec onglets :**
+
+| Onglet | Icône | Contenu |
+|--------|-------|---------|
+| **Highlights** | ⭐ | Carte interactive, filtres catégories, liste highlights |
+| **Budget** | 💰 | Budget journalier, répartition par catégorie |
+| **Pratique** | 🌍 | Visa, devise, langue, conseils |
+
+**Section Highlights :**
+```
+┌─────────────────────────────────────────────┐
+│ [CityHighlightsMap - carte des highlights]  │
+├─────────────────────────────────────────────┤
+│ [🍽️ Food] [🏛️ Culture] [🌳 Nature] ...     │
+│ X highlights                                │
+├─────────────────────────────────────────────┤
+│ [HighlightCard] ─────────────────────────── │
+│   🍽️ Restaurant Name         ⭐ Must-see   │
+│   📍 123 rue de Paris                       │
+│   💰 €€ Modéré                              │
+│   💡 "Réserver à l'avance"                  │
+│   [📍 Voir sur carte] [✏️] [🗑️]             │
+└─────────────────────────────────────────────┘
+```
+
+**Fonctionnalités CRUD Highlights :**
+- Création via modal (nom, catégorie, adresse, description, prix, tips, must-see)
+- Édition inline de tous les champs
+- Suppression avec confirmation
+- Géocodage automatique des adresses (LocationIQ)
+- Liens vers Apple Maps / Google Maps / Waze
+
+---
+
+### `/app/review/city/[cityId].tsx` - Review et validation d'une ville (NEW)
 
 **Workflow :**
 1. L'utilisateur arrive depuis l'Inbox après analyse
-2. Il sélectionne les jours à inclure (toggle "Inclus/Inclure")
-3. Il peut éditer chaque spot (nom, type, prix, tips, highlight)
-4. Il peut supprimer des spots
-5. Il sauvegarde → redirection vers le détail du trip
-
-**UI Header :**
-```
-← Retour  |  Titre du trip
-          |  📍 Destination · X jours
-```
+2. **Détection merge** : si une ville existe déjà, proposition de fusion
+3. Il sélectionne les highlights à inclure (validation checkboxes)
+4. Il peut réordonner par drag & drop
+5. Il peut éditer/supprimer chaque highlight
+6. Il sauvegarde → redirection vers le détail de la ville
 
 **Panneau de sélection :**
 ```
 ┌─────────────────────────────────────────────┐
-│ Sélectionne tes jours         [Tout][Aucun]│
-│ X jours · Y lieux                           │
+│ Sélectionne tes highlights   [Tout][Aucun]  │
+│ X highlights · Y sélectionnés               │
 │ [████████░░░░░░░░░░] 60%                    │
-│ [✓ J1] [✓ J2] [ J3] [✓ J4] [ J5]           │
+│                                             │
+│ [🍽️ Food (3)] [🏛️ Culture (2)] ...         │
 └─────────────────────────────────────────────┘
 ```
 
-**DayReviewCard :**
-- Barre latérale colorée (bleu si inclus)
-- Toggle "Inclus/Inclure" avec animation
-- Expansion avec animation (height 0→auto)
-- Liste des spots éditables
-- Repas du jour (🌅 🌞 🌙)
-- Hébergement
-
-**SpotReviewCard - Mode lecture :**
-```
-🍽️ Nom du spot ⭐  [📍][✏️][🗑️]
-    Adresse
-    ⏱️ 30min  €€ Modéré
-    💡 Conseil du créateur
-```
-
-**SpotReviewCard - Mode édition :**
+**HighlightReviewCard :**
 ```
 ┌─────────────────────────────────────────────┐
-│ NOM    [_____________________________]      │
-│ TYPE   [🍽️ restaurant] [🍷 bar] [🏨 hotel]...│
-│ PRIX   [gratuit] [€] [€€] [€€€] [€€€€]     │
-│ ADRESSE [_____________________________]     │
-│ DURÉE   [_____] min                         │
-│ CONSEIL [_____________________________]     │
-│ [⭐ Coup de cœur]                           │
-│                                             │
-│ [💾 Enregistrer]  [✕ Annuler]              │
+│ [☰ drag] [✓] 🍽️ Nom du lieu    [✏️][🗑️]   │
+│           📍 Adresse                        │
+│           💰 €€  💡 Conseil                 │
 └─────────────────────────────────────────────┘
 ```
 
-**Footer sticky :**
-- Bouton vert "Sauvegarder X jours" si jours sélectionnés
-- Bouton gris "Sélectionne au moins un jour" si aucun
-- Bouton rouge "Retirer de ma collection" si déjà sauvegardé
-- Loader pendant la validation
+**Merge Modal (si ville existante détectée) :**
+```
+┌─────────────────────────────────────────────┐
+│ ⚠️ Ville existante détectée                 │
+│                                             │
+│ "Paris" existe déjà dans ta collection.     │
+│ Souhaites-tu fusionner les highlights ?     │
+│                                             │
+│ [Fusionner] [Créer nouvelle] [Annuler]      │
+└─────────────────────────────────────────────┘
+```
 
 ---
 
-## 4. Constantes et Configuration
+## 4. Composants Réutilisables
+
+### Composants Ville (NEW - `/components/city/`)
+
+| Composant | Description |
+|-----------|-------------|
+| **CategoryFilterChips** | Chips horizontaux scrollables pour filtrer par catégorie |
+| **HighlightCard** | Carte highlight en mode lecture avec actions CRUD |
+| **HighlightReviewCard** | Carte highlight en mode review avec validation + drag |
+| **CityHighlightsMap** | Carte interactive avec markers colorés par catégorie |
+| **CityBudgetCard** | Affichage budget avec répartition |
+
+### Composants Trip (NEW - `/components/trip/`)
+
+| Composant | Description |
+|-----------|-------------|
+| **AddCityToTripModal** | Modal pour ajouter ville sauvegardée à un trip |
+
+---
+
+## 5. Constantes et Configuration
 
 ### Types de spots avec emojis
 ```typescript
@@ -335,6 +520,18 @@ SPOT_EMOJI = {
   activite: '🎯', transport: '🚗', shopping: '🛍️', museum: '🏛️',
   beach: '🏖️', park: '🌳', viewpoint: '🔭', cafe: '☕',
   market: '🛒', nightlife: '🎶', spa: '💆', other: '📍'
+}
+```
+
+### Catégories Highlights (NEW)
+```typescript
+HIGHLIGHT_CATEGORIES = {
+  food: { label: 'Food & Drinks', emoji: '🍽️', color: 'orange' },
+  culture: { label: 'Culture', emoji: '🏛️', color: 'purple' },
+  nature: { label: 'Nature', emoji: '🌳', color: 'green' },
+  shopping: { label: 'Shopping', emoji: '🛍️', color: 'pink' },
+  nightlife: { label: 'Nightlife', emoji: '🎶', color: 'indigo' },
+  other: { label: 'Other', emoji: '📍', color: 'gray' }
 }
 ```
 
@@ -367,47 +564,62 @@ SEASON_EMOJI = {
 
 ---
 
-## 5. Fonctionnalités Avancées
+## 6. Fonctionnalités Avancées
 
 ### Géolocalisation
 - **LocationIQ API** pour geocoding des adresses
 - Normalisation du texte pour l'API (`normalizeTextForLocationIQAPI`)
-- Sync automatique des coordonnées au moment du save (`syncDestinations`)
-- Lien Google Maps depuis chaque spot (lat/lon ou adresse)
+- Sync automatique des coordonnées au moment du save
+- Lien Google Maps / Apple Maps / Waze depuis chaque spot/highlight
+- **Géocodage contextuel** : inclut toujours ville/pays pour éviter ambiguïtés
 
 ### Animations
 - **Staggered entry** : Cartes apparaissent en cascade (80ms de délai)
 - **Expand/collapse** : Animation hauteur + opacité pour les jours
 - **Loader rotatif** : SpinningLoader avec Animated.loop
+- **Drag & Drop** : Animation scale lors du déplacement
 
 ### Optimistic Updates
 - Les modifications locales sont appliquées immédiatement
 - Rollback en cas d'erreur API
 - Refresh complet si échec de rollback
 
-### Notes utilisateur
-- Champ `notes` optionnel lors du save
-- Affiché en italique sur la carte du trip
+### Système de Merge (NEW)
+- Détection automatique de villes existantes par nom
+- Sélection des highlights à fusionner
+- Option de supprimer la source après merge
+- Seuls les highlights validés sont fusionnés
+
+### Data Refresh
+- **useFocusEffect** : Recharge les données quand l'écran reprend le focus
+- Évite les données stales après navigation
 
 ---
 
-## 6. Points d'Amélioration Potentiels
+## 7. Points d'Amélioration Potentiels
 
 | Aspect | État actuel | Amélioration possible |
 |--------|-------------|----------------------|
-| **Offline** | Aucun cache local | Ajouter AsyncStorage pour trips sauvegardés |
-| **Partage** | Non implémenté | Ajouter deep links pour partager un trip |
+| **Offline** | Aucun cache local | Ajouter AsyncStorage pour trips/villes sauvegardés |
+| **Partage** | Non implémenté | Ajouter deep links pour partager un trip/ville |
 | **Recherche** | Non implémentée | Filtrer trips par destination/vibe/durée |
 | **Export** | Non implémenté | PDF/calendrier pour l'itinéraire |
 | **Collaboration** | Non implémentée | Partager un trip avec d'autres utilisateurs |
-| **Réordonner spots** | Non implémenté | Drag & drop pour changer l'ordre |
-| **Ajouter spots** | Non implémenté | Bouton "+" pour ajouter manuellement |
+| **Réordonner spots** | Non implémenté | Drag & drop pour changer l'ordre des spots |
+| **Ajouter spots** | Non implémenté | Bouton "+" pour ajouter manuellement des spots |
+| **Sync bi-directionnelle** | Partielle | Synchroniser highlights ville ↔ spots trip |
 
 ---
 
 ## Historique Git Récent
 
 ```
+1f52996 - Remove unnecessary padding from user profile view
+d4ccb01 - Fix safe area padding for iOS navbar in saved items list
+c081316 - Fix navigation blocking after review save/merge
+7d020d9 - Align trip detail navigation with city detail for consistency
+4bf046f - Fix city detail page navigation and add data refresh on focus
+...
 f92c5f1 - Add share extension for iOS and Android
 fc29a82 - Merge pull request #1
 47f40ce - Refactor iOS version check and clean up AddTripModal; add InteractiveHeroMap

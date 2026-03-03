@@ -103,7 +103,7 @@ export default function ShareScreen(props: InitialProps) {
 
     try {
       const jwt = await SecureStore.getItemAsync('supabase_jwt', {
-        accessGroup: 'group.com.anonymous.BomboMobile.shared',
+        accessGroup: 'group.com.onedaytravel.mobile.shared',
       });
 
       // Extract user_id from JWT payload (sub claim) instead of reading separately
@@ -129,10 +129,18 @@ export default function ShareScreen(props: InitialProps) {
 
       const entityTypeOverride = entityType === 'auto' ? undefined : entityType;
 
+      console.log('[ShareExtension] Calling API:', API_BASE);
+      console.log('[ShareExtension] Request body:', JSON.stringify({
+        url: sharedUrl,
+        user_id: userId,
+        entity_type_override: entityTypeOverride,
+      }));
+
       const response = await fetch(`${API_BASE}/analyze/url`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${jwt}`,
           'ngrok-skip-browser-warning': 'true',
         },
         body: JSON.stringify({
@@ -142,11 +150,20 @@ export default function ShareScreen(props: InitialProps) {
         }),
       });
 
-      if (!response.ok) throw new Error('API error');
-      const { job_id } = await response.json();
-      console.log('Analysis job started:', job_id);
+      console.log('[ShareExtension] Response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('[ShareExtension] API error response:', errorText);
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('[ShareExtension] API response:', JSON.stringify(data));
+      console.log('Analysis job started:', data.job_id);
       setPhase('success');
-    } catch {
+    } catch (err) {
+      console.log('[ShareExtension] Error:', err);
       setPhase('error');
     } finally {
       setTimeout(() => close(), 1500);

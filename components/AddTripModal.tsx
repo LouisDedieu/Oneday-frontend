@@ -64,7 +64,7 @@ const validateUrl = (value: string) =>
 interface AddTripModalProps {
   isOpen:  boolean;
   onClose: () => void;
-  onAnalysisStarted?: () => void;
+  onAnalysisStarted?: (url: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -176,12 +176,12 @@ export default function AddTripModal({ isOpen, onClose, onAnalysisStarted }: Add
         entityType === 'auto' ? undefined : entityType;
 
       analyze(url, userId, false, entityTypeOverride);
-      // Fermer le modal et rafraîchir l'inbox après un court délai
-      // pour laisser le temps au job d'être créé côté backend
-      setTimeout(() => {
-        onClose();
-        onAnalysisStarted?.();
-      }, 500);
+      const submittedUrl = url;
+      setUrl('');
+      setValidationError('');
+      setEntityType('auto');
+      onClose();
+      onAnalysisStarted?.(submittedUrl);
     } catch (err: any) {
       console.error("Erreur d'analyse:", err);
     }

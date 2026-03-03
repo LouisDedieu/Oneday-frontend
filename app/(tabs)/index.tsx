@@ -16,6 +16,7 @@ import {
   RefreshControl,
   Animated,
   Easing,
+  Alert,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,8 +33,9 @@ import {
   Loader2,
   Map,
   MapPin,
+  Trash2,
 } from 'lucide-react-native';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiDelete } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import {Button} from '@/components/Button';
 import AddTripModal from '@/components/AddTripModal';
@@ -158,10 +160,12 @@ function SpinningLoader({ size = 32, color = '#60a5fa' }: { size?: number; color
 function JobCard({
                    job,
                    onPress,
+                   onDelete,
                    animIndex,
                  }: {
   job: InboxJob;
   onPress: () => void;
+  onDelete: () => void;
   animIndex: number;
 }) {
   const cfg = STATUS_CONFIG[job.status];
@@ -326,9 +330,19 @@ function JobCard({
               <Text className="text-xs text-red-400 mt-2">{job.errorMessage}</Text>
             )}
 
-            {/* Footer : date relative + lien */}
+            {/* Footer : date relative + actions */}
             <View className="flex-row items-center justify-between mt-2">
-              <Text className="text-xs text-zinc-600">{relativeTime}</Text>
+              <View className="flex-row items-center gap-3">
+                <Text className="text-xs text-zinc-600">{relativeTime}</Text>
+                <TouchableOpacity
+                  onPress={onDelete}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  className="flex-row items-center gap-1"
+                >
+                  <Trash2 size={12} color="#ef4444" />
+                  <Text className="text-xs text-red-500">Supprimer</Text>
+                </TouchableOpacity>
+              </View>
               {isClickable && (
                 <View className="flex-row items-center gap-1">
                   <Text className="text-xs" style={{ color: isCity ? '#a855f7' : '#60a5fa' }}>
@@ -379,7 +393,16 @@ export default function InboxPage() {
 
     try {
       const fetched = await apiFetch<InboxJob[]>('/inbox');
-      setJobs(fetched);
+      const now = Date.now();
+      setJobs(prev => {
+        // Garde les jobs optimistes qui ne sont pas encore dans la DB (max 15s)
+        const keepOptimistic = prev.filter(j =>
+          j.isLocal &&
+          !fetched.some(f => f.sourceUrl === j.sourceUrl) &&
+          now - new Date(j.createdAt).getTime() < 15_000
+        );
+        return [...keepOptimistic, ...fetched];
+      });
     } catch (err: any) {
       setError('Impossible de charger vos analyses.');
     } finally {
@@ -397,7 +420,7 @@ export default function InboxPage() {
     loadFromDb(false);
   }, [loadFromDb]));
 
-  // Polling 15s si jobs en cours — web: useEffect + setInterval
+  // Polling 15s si jobs en cours
   useEffect(() => {
     if (inProgressCount === 0) return;
     const interval = setInterval(() => loadFromDb(false), 15_000);
@@ -413,6 +436,28 @@ export default function InboxPage() {
     } else if (job.tripId) {
       router.push(`/review/${job.tripId}`);
     }
+  };
+
+  const handleDeleteJob = (job: InboxJob) => {
+    Alert.alert(
+      'Supprimer cette analyse ?',
+      `Toutes les données associées à "${job.title}" seront supprimées définitivement.`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiDelete(`/inbox/${job.jobId}`);
+              setJobs((prev) => prev.filter((j) => j.jobId !== job.jobId));
+            } catch (err) {
+              Alert.alert('Erreur', 'Impossible de supprimer cette analyse.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -487,6 +532,7 @@ export default function InboxPage() {
             <JobCard
               job={item}
               onPress={() => handleJobClick(item)}
+              onDelete={() => handleDeleteJob(item)}
               animIndex={index}
             />
           )}
@@ -526,7 +572,23 @@ export default function InboxPage() {
       <AddTripModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        onAnalysisStarted={() => loadFromDb(false)}
+        onAnalysisStarted={(url) => {
+          const optimistic: InboxJob = {
+            jobId: `optimistic-${Date.now()}`,
+            tripId: null,
+            cityId: null,
+            entityType: 'trip',
+            title: url,
+            sourceUrl: url,
+            platform: detectPlatform(url),
+            createdAt: new Date().toISOString(),
+            status: 'pending',
+            progressPct: 0,
+            errorMessage: null,
+            isLocal: true,
+          };
+          setJobs(prev => [optimistic, ...prev]);
+        }}
       />
     </View>
   );

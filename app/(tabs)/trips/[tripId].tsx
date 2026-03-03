@@ -3,11 +3,10 @@
  * Complete refactor with NativeWind, preserving all React source features
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   Linking,
@@ -16,11 +15,17 @@ import {
   Platform,
   Alert,
 } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import {
+  NestableScrollContainer,
+  NestableDraggableFlatList,
+  ScaleDecorator,
+  RenderItemParams,
+} from 'react-native-draggable-flatlist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { InteractiveHeroMap } from '@/components/InteractiveHeroMap';
 import {
-  X,
   MapPin,
   ExternalLink,
   Star,
@@ -29,6 +34,7 @@ import {
   Globe,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
   CalendarDays,
   Truck,
   Info,
@@ -46,9 +52,19 @@ import {
   Sun,
   Moon,
   Camera,
+  Plus,
+  Building2,
+  GripVertical,
+  Check,
+  Trash2,
 } from 'lucide-react-native';
 import { getTrip } from '@/services/tripService';
+import { getUserSavedCities } from '@/services/cityService';
+import { useAuth } from '@/context/AuthContext';
 import { Destination } from '@/types/api';
+import { AddCityToTripModal } from '@/components/trip/AddCityToTripModal';
+import type { DbDay as ReviewDbDay } from '@/services/reviewService';
+import { reorderDestinations, deleteDestination } from '@/services/reviewService';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -69,6 +85,10 @@ interface DbSpot {
   google_place_id: string | null;
   spot_order: number;
   verified: boolean;
+  // Lien vers la ville source (pour navigation et sync)
+  source_city_id: string | null;
+  city_highlight_id: string | null;
+  _synced_from_highlight?: boolean;
 }
 
 interface DbDay {
@@ -84,6 +104,8 @@ interface DbDay {
   lunch_spot: string | null;
   dinner_spot: string | null;
   spots: DbSpot[];
+  // Lien vers la ville source pour sync automatique
+  linked_city_id: string | null;
 }
 
 interface DbLogistics {
@@ -185,23 +207,72 @@ type Tab = 'itinerary' | 'budget' | 'practical' | 'logistics';
 // Main Component
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Type for saved city mapping
+interface SavedCityMap {
+  [cityName: string]: string; // cityName -> cityId
+}
+
 export default function TripDetailPage() {
   const router = useRouter();
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
 
   const [trip, setTrip] = useState<FullTrip | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('itinerary');
   const [expandedDay, setExpandedDay] = useState<number>(1);
+  const [showAddCityModal, setShowAddCityModal] = useState(false);
+  const [savedCitiesMap, setSavedCitiesMap] = useState<SavedCityMap>({});
+  const [isEditingOrder, setIsEditingOrder] = useState(false);
+  const [pendingDestinations, setPendingDestinations] = useState<Destination[]>([]);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
 
-  useEffect(() => {
+  const loadTrip = useCallback((showLoading = false) => {
     if (!tripId) return;
+    if (showLoading) setLoading(true);
     getTrip(tripId)
       .then((data) => setTrip(data as FullTrip))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [tripId]);
+
+  // Charger le trip initialement
+  useEffect(() => {
+    loadTrip(true);
+  }, [tripId]);
+
+  // Recharger quand la page reprend le focus (retour de cityDetails, etc.)
+  useFocusEffect(
+    useCallback(() => {
+      // Ne pas recharger si c'est le premier mount (loading est true)
+      if (!loading && tripId) {
+        loadTrip(false);
+      }
+    }, [tripId, loading, loadTrip])
+  );
+
+  // Load saved cities to create a mapping
+  useEffect(() => {
+    if (!user?.id) return;
+    getUserSavedCities(user.id, 1, 100)
+      .then((res) => {
+        const map: SavedCityMap = {};
+        res.items.forEach((item) => {
+          if (item.cities?.city_name) {
+            map[item.cities.city_name.toLowerCase()] = item.cities.id;
+          }
+        });
+        setSavedCitiesMap(map);
+      })
+      .catch(console.error);
+  }, [user?.id]);
+
+  // Helper to find saved city ID by destination city name
+  const getSavedCityId = (cityName: string | undefined): string | null => {
+    if (!cityName) return null;
+    return savedCitiesMap[cityName.toLowerCase()] || null;
+  };
 
   // Derived data
   const derived = useMemo(() => {
@@ -217,6 +288,51 @@ export default function TripDetailPage() {
     const seasonEmoji = trip.best_season ? (SEASON_EMOJI[trip.best_season.toLowerCase()] ?? '🌍') : null;
     return { destinations, days, logistics, budget, practical, totalSpots, highlights, destLabel, seasonEmoji };
   }, [trip]);
+
+  const enterEditMode = useCallback(() => {
+    if (!derived?.destinations) return;
+    setPendingDestinations([...derived.destinations]);
+    setIsEditingOrder(true);
+  }, [derived?.destinations]);
+
+  const cancelEditMode = useCallback(() => {
+    setIsEditingOrder(false);
+    setPendingDestinations([]);
+  }, []);
+
+  const confirmOrder = useCallback(async () => {
+    if (!tripId) return;
+    if (pendingDestinations.length === 0) {
+      Alert.alert('Attention', "L'itinéraire doit contenir au moins une ville.");
+      return;
+    }
+    setIsSavingOrder(true);
+    try {
+      // Destinations supprimées dans l'UI = présentes dans l'original mais absentes du pending
+      const originalIds = new Set(derived?.destinations.map(d => d.id) ?? []);
+      const pendingIds = new Set(pendingDestinations.map(d => d.id));
+      const deletedIds = [...originalIds].filter(id => !pendingIds.has(id));
+
+      // Supprimer d'abord les destinations retirées
+      if (deletedIds.length > 0) {
+        await Promise.all(deletedIds.map(id => deleteDestination(tripId, id)));
+      }
+
+      // Puis mettre à jour l'ordre des restantes (backend met aussi à jour les days)
+      await reorderDestinations(tripId, {
+        destinations: pendingDestinations.map((d, idx) => ({ id: d.id, order: idx + 1 })),
+      });
+
+      // Recharger les données depuis le backend pour avoir les days réordonnés
+      loadTrip(false);
+      setIsEditingOrder(false);
+      setPendingDestinations([]);
+    } catch {
+      Alert.alert('Erreur', "Impossible de sauvegarder les modifications. Réessayez.");
+    } finally {
+      setIsSavingOrder(false);
+    }
+  }, [tripId, pendingDestinations, derived?.destinations, loadTrip]);
 
   if (loading) {
     return (
@@ -250,14 +366,15 @@ export default function TripDetailPage() {
   ];
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <View className="flex-1 bg-black">
       {/* ════════════════════════════════════════════
           HEADER STICKY
       ════════════════════════════════════════════ */}
       <View className="bg-zinc-950/95 border-b border-zinc-800/80" style={{ paddingTop: insets.top }}>
         <View className="max-w-2xl mx-auto px-4 py-3 flex-row items-center gap-3">
-          <TouchableOpacity onPress={() => router.replace('/(tabs)/trips')} className="p-2 -ml-2">
-            <X size={20} color="#a1a1aa" />
+          <TouchableOpacity onPress={() => router.back()} className="flex-row items-center -ml-1">
+            <ChevronLeft size={22} color="#a1a1aa" />
           </TouchableOpacity>
 
           <View className="flex-1 min-w-0">
@@ -326,8 +443,8 @@ export default function TripDetailPage() {
       {/* ════════════════════════════════════════════
           CONTENT BY TAB
       ════════════════════════════════════════════ */}
-      <ScrollView
-        className="flex-1 max-w-2xl mx-auto w-full"
+      <NestableScrollContainer
+        style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
       >
 
@@ -392,14 +509,58 @@ export default function TripDetailPage() {
                 </View>
               )}
             </View>
+
+            {/* Single destination with saved city link */}
+            {destinations.length === 1 && getSavedCityId(destinations[0].city) && (
+              <TouchableOpacity
+                onPress={() => router.push(`/(tabs)/trips/city/${getSavedCityId(destinations[0].city)}`)}
+                className="bg-zinc-900 rounded-xl border border-zinc-800 p-4 flex-row items-center gap-3"
+                style={{ borderColor: '#a855f74D' }}
+              >
+                <View
+                  className="w-10 h-10 rounded-full items-center justify-center"
+                  style={{ backgroundColor: '#a855f733' }}
+                >
+                  <Building2 size={20} color="#a855f7" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-sm font-medium text-white">
+                    {destinations[0].city}
+                  </Text>
+                  <Text className="text-xs text-zinc-500">
+                    Voir les highlights de cette ville
+                  </Text>
+                </View>
+                <ExternalLink size={16} color="#a855f7" />
+              </TouchableOpacity>
+            )}
+
             {/* Destinations overview (multi-stop) */}
             {destinations.length > 1 && (
               <View className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
-                <Text className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-3">
-                  Étapes du voyage
-                </Text>
-                <View>
-                  {destinations.map((dest, i) => (
+                {/* Header */}
+                <View className="flex-row items-center justify-between mb-3">
+                  <Text className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+                    Étapes du voyage
+                  </Text>
+                  {!isEditingOrder ? (
+                    <TouchableOpacity
+                      onPress={enterEditMode}
+                      className="flex-row items-center gap-1 px-2 py-1 rounded-lg"
+                      style={{ backgroundColor: '#27272a', borderWidth: 1, borderColor: '#3f3f46' }}
+                    >
+                      <GripVertical size={12} color="#a1a1aa" />
+                      <Text style={{ fontSize: 11, color: '#a1a1aa' }}>Réordonner</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <Text className="text-[10px] text-zinc-600">Maintenir pour glisser</Text>
+                  )}
+                </View>
+
+                {/* Vue normale — liste statique */}
+                {!isEditingOrder && destinations.map((dest, i) => {
+                  const savedCityId = getSavedCityId(dest.city);
+                  return (
                     <View key={dest.id} className="flex-row gap-3 pb-3">
                       <View className="items-center">
                         <View className="w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/40 items-center justify-center">
@@ -409,21 +570,149 @@ export default function TripDetailPage() {
                           <View className="w-px flex-1 bg-zinc-700 mt-1" />
                         )}
                       </View>
-                      <View className="flex-1 pt-1">
-                        <Text className="text-sm font-medium text-white">
-                          {[dest.city, dest.country].filter(Boolean).join(', ')}
-                        </Text>
-                        {dest.days_spent && (
-                          <Text className="text-xs text-zinc-500 mt-0.5">
-                            {dest.days_spent} jour{dest.days_spent > 1 ? 's' : ''}
+                      <View className="flex-1 pt-1 flex-row items-start justify-between">
+                        <View className="flex-1">
+                          <Text className="text-sm font-medium text-white">
+                            {[dest.city, dest.country].filter(Boolean).join(', ')}
                           </Text>
+                          {dest.days_spent && (
+                            <Text className="text-xs text-zinc-500 mt-0.5">
+                              {dest.days_spent} jour{dest.days_spent > 1 ? 's' : ''}
+                            </Text>
+                          )}
+                        </View>
+                        {savedCityId && (
+                          <TouchableOpacity
+                            onPress={() => router.push(`/(tabs)/trips/city/${savedCityId}`)}
+                            className="flex-row items-center gap-1 px-2 py-1 rounded-lg"
+                            style={{ backgroundColor: '#a855f71A', borderWidth: 1, borderColor: '#a855f74D' }}
+                          >
+                            <Building2 size={12} color="#a855f7" />
+                            <Text style={{ fontSize: 10, color: '#a855f7' }}>Voir</Text>
+                          </TouchableOpacity>
                         )}
                       </View>
                     </View>
-                  ))}
-                </View>
+                  );
+                })}
+
+                {/* Mode édition — liste draggable */}
+                {isEditingOrder && (
+                  <>
+                    <NestableDraggableFlatList
+                      data={pendingDestinations}
+                      keyExtractor={(item) => item.id}
+                      onDragEnd={({ data }) => setPendingDestinations(data)}
+                      scrollEnabled={false}
+                      renderItem={({ item: dest, drag, isActive, getIndex }: RenderItemParams<Destination>) => {
+                        const i = getIndex() ?? 0;
+                        return (
+                          <ScaleDecorator activeScale={0.97}>
+                            <View
+                              className="flex-row gap-3 pb-3"
+                              style={{ opacity: isActive ? 0.75 : 1 }}
+                            >
+                              <View className="items-center">
+                                <View className="w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/40 items-center justify-center">
+                                  <Text className="text-blue-400 text-xs font-bold">{i + 1}</Text>
+                                </View>
+                                {i < pendingDestinations.length - 1 && (
+                                  <View className="w-px flex-1 bg-zinc-700 mt-1" />
+                                )}
+                              </View>
+                              <View className="flex-1 pt-1 flex-row items-center justify-between">
+                                <View className="flex-1">
+                                  <Text className="text-sm font-medium text-white">
+                                    {[dest.city, dest.country].filter(Boolean).join(', ')}
+                                  </Text>
+                                  {dest.days_spent && (
+                                    <Text className="text-xs text-zinc-500 mt-0.5">
+                                      {dest.days_spent} jour{dest.days_spent > 1 ? 's' : ''}
+                                    </Text>
+                                  )}
+                                </View>
+                                <View className="flex-row items-center gap-3">
+                                  <TouchableOpacity
+                                    onPress={() => {
+                                      Alert.alert(
+                                        'Supprimer cette ville ?',
+                                        `${dest.city} et tous ses jours seront supprimés de l'itinéraire.`,
+                                        [
+                                          { text: 'Annuler', style: 'cancel' },
+                                          {
+                                            text: 'Supprimer',
+                                            style: 'destructive',
+                                            onPress: () =>
+                                              setPendingDestinations(prev =>
+                                                prev.filter(d => d.id !== dest.id)
+                                              ),
+                                          },
+                                        ]
+                                      );
+                                    }}
+                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                  >
+                                    <Trash2 size={16} color="#f87171" />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    onLongPress={drag}
+                                    delayLongPress={100}
+                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                  >
+                                    <GripVertical size={18} color="#71717a" />
+                                  </TouchableOpacity>
+                                </View>
+                              </View>
+                            </View>
+                          </ScaleDecorator>
+                        );
+                      }}
+                    />
+
+                    {/* Confirmer / Annuler */}
+                    <View
+                      className="flex-row gap-2 mt-1 pt-3"
+                      style={{ borderTopWidth: 1, borderTopColor: '#27272a' }}
+                    >
+                      <TouchableOpacity
+                        onPress={cancelEditMode}
+                        disabled={isSavingOrder}
+                        className="flex-1 items-center py-2 rounded-lg"
+                        style={{ backgroundColor: '#27272a', borderWidth: 1, borderColor: '#3f3f46' }}
+                      >
+                        <Text style={{ fontSize: 13, color: '#a1a1aa', fontWeight: '500' }}>Annuler</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={confirmOrder}
+                        disabled={isSavingOrder}
+                        className="flex-1 flex-row items-center justify-center gap-1.5 py-2 rounded-lg"
+                        style={{ backgroundColor: '#2563eb', opacity: isSavingOrder ? 0.6 : 1 }}
+                      >
+                        {isSavingOrder
+                          ? <ActivityIndicator size="small" color="#fff" />
+                          : <Check size={13} color="#fff" />
+                        }
+                        <Text style={{ fontSize: 13, color: '#fff', fontWeight: '600' }}>Confirmer</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                )}
               </View>
             )}
+
+            {/* Add city button */}
+            <TouchableOpacity
+              onPress={() => setShowAddCityModal(true)}
+              className="flex-row items-center justify-center gap-2 py-3 rounded-xl"
+              style={{
+                backgroundColor: '#a855f71A',
+                borderWidth: 1,
+                borderColor: '#a855f74D',
+              }}
+            >
+              <Plus size={18} color="#a855f7" />
+              <Text style={{ color: '#a855f7', fontWeight: '500' }}>Ajouter une ville</Text>
+            </TouchableOpacity>
 
             {/* Days */}
             {days.length === 0 ? (
@@ -735,8 +1024,21 @@ export default function TripDetailPage() {
             )}
           </View>
         )}
-      </ScrollView>
+      </NestableScrollContainer>
+
+      {/* Add City Modal */}
+      {tripId && (
+        <AddCityToTripModal
+          visible={showAddCityModal}
+          onClose={() => setShowAddCityModal(false)}
+          tripId={tripId}
+          tripDays={days as unknown as ReviewDbDay[]}
+          existingDestinations={days.map((d) => d.location).filter((loc): loc is string => !!loc)}
+          onCityAdded={loadTrip}
+        />
+      )}
     </View>
+    </GestureHandlerRootView>
   );
 }
 
@@ -747,14 +1049,18 @@ export default function TripDetailPage() {
 function DayCard({ day, isExpanded, onToggle }: {
   day: DbDay; isExpanded: boolean; onToggle: () => void;
 }) {
+  const router = useRouter();
   const sortedSpots = useMemo(
     () => [...(day.spots ?? [])].sort((a, b) => (a.spot_order ?? 0) - (b.spot_order ?? 0)),
     [day.spots]
   );
   const hasMeals = day.breakfast_spot || day.lunch_spot || day.dinner_spot;
+  const isLinkedToCity = !!day.linked_city_id;
 
   return (
-    <View className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
+    <View className={`bg-zinc-900 rounded-xl border overflow-hidden ${
+      isLinkedToCity ? 'border-purple-500/30' : 'border-zinc-800'
+    }`}>
       {/* Header */}
       <TouchableOpacity
         onPress={onToggle}
@@ -766,9 +1072,22 @@ function DayCard({ day, isExpanded, onToggle }: {
         </View>
 
         <View className="flex-1">
-          <Text className="text-sm font-semibold text-white" numberOfLines={1}>
-            {day.location ?? `Jour ${day.day_number}`}
-          </Text>
+          <View className="flex-row items-center gap-1.5">
+            <Text className="text-sm font-semibold text-white" numberOfLines={1}>
+              {day.location ?? `Jour ${day.day_number}`}
+            </Text>
+            {isLinkedToCity && (
+              <TouchableOpacity
+                onPress={() => router.push(`/(tabs)/trips/city/${day.linked_city_id}`)}
+                hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+              >
+                <View className="bg-purple-500/20 border border-purple-500/30 rounded px-1.5 py-0.5 flex-row items-center gap-0.5">
+                  <Building2 size={10} color="#a855f7" />
+                  <Text className="text-[10px] text-purple-400">Sync</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         <View className="flex-row items-center gap-2">
@@ -847,7 +1166,9 @@ function DayCard({ day, isExpanded, onToggle }: {
 }
 
 function SpotCard({ spot }: { spot: DbSpot }) {
+  const router = useRouter();
   const priceCfg = spot.price_range ? PRICE_CONFIG[spot.price_range] : null;
+  const isSynced = spot._synced_from_highlight && spot.source_city_id;
 
   const openMap = () => {
     const lat = spot.latitude;
@@ -939,6 +1260,15 @@ function SpotCard({ spot }: { spot: DbSpot }) {
                 <View className="bg-emerald-400/10 border border-emerald-400/20 rounded px-1">
                   <Text className="text-[10px] text-emerald-400">✓</Text>
                 </View>
+              )}
+              {isSynced && (
+                <TouchableOpacity
+                  onPress={() => router.push(`/(tabs)/trips/city/${spot.source_city_id}`)}
+                  className="bg-purple-500/10 border border-purple-500/20 rounded px-1.5 py-0.5 flex-row items-center gap-0.5"
+                >
+                  <Building2 size={10} color="#a855f7" />
+                  <Text className="text-[10px] text-purple-400">City</Text>
+                </TouchableOpacity>
               )}
             </View>
             {(spot.latitude && spot.longitude || spot.address) && (

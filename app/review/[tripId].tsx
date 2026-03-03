@@ -34,6 +34,7 @@ import {
 } from '@/services/reviewService';
 import type { DbTrip, DbDay, DbSpot, SpotUpdatePayload } from '@/services/reviewService';
 import { Button } from '@/components/Button';
+import { AddCityToTripModal } from '@/components/trip/AddCityToTripModal';
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -512,6 +513,7 @@ export default function ReviewModePage() {
   const [validating,  setValidating] = useState(false);
   const [isSaved,     setIsSaved]    = useState(false);
   const [expandedDay, setExpandedDay] = useState<number>(0);
+  const [showAddCityModal, setShowAddCityModal] = useState(false);
 
   useEffect(() => {
     if (!tripId) return;
@@ -591,6 +593,18 @@ export default function ReviewModePage() {
     }
   }, [tripId]);
 
+  // Refresh trip after adding city
+  const handleCityAdded = useCallback(() => {
+    if (tripId) {
+      fetchTripForReview(tripId).then((t) => t && setTrip(t));
+    }
+  }, [tripId]);
+
+  // Get existing destinations from trip days
+  const existingDestinations = trip?.days
+    .map((d) => d.location)
+    .filter((loc): loc is string => !!loc) || [];
+
   // handleValidate — web: save/unsave + syncDestinations
   const handleValidate = async () => {
     if (!trip || !user?.id) return;
@@ -603,8 +617,8 @@ export default function ReviewModePage() {
         await syncDestinations(trip.id);
         await saveTrip(user.id, trip.id);
         setIsSaved(true);
-        // Rediriger vers la page du trip après sauvegarde
-        router.push(`/(tabs)/trips/${trip.id}`);
+        // Rediriger vers la liste des trips après sauvegarde
+        router.replace('/(tabs)/trips');
       }
     } catch (err: any) {
       Alert.alert('Erreur', err.message);
@@ -744,6 +758,19 @@ export default function ReviewModePage() {
               </Text>
             </View>
             <View className="flex-row gap-1.5 flex-shrink-0">
+              {/* Add city button */}
+              <TouchableOpacity
+                onPress={() => setShowAddCityModal(true)}
+                className="flex-row items-center gap-1 px-2.5 py-1 rounded-lg"
+                style={{
+                  backgroundColor: '#a855f71A',
+                  borderWidth: 1,
+                  borderColor: '#a855f74D',
+                }}
+              >
+                <Plus size={12} color="#a855f7" />
+                <Text style={{ fontSize: 12, color: '#a855f7' }}>Ville</Text>
+              </TouchableOpacity>
               {(['Tout', 'Aucun'] as const).map((label) => {
                 const isAll = label === 'Tout';
                 const disabled = isAll ? validatedCount === totalDays : validatedCount === 0;
@@ -851,6 +878,18 @@ export default function ReviewModePage() {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Add City Modal */}
+      {tripId && (
+        <AddCityToTripModal
+          visible={showAddCityModal}
+          onClose={() => setShowAddCityModal(false)}
+          tripId={tripId}
+          tripDays={trip?.days || []}
+          existingDestinations={existingDestinations}
+          onCityAdded={handleCityAdded}
+        />
+      )}
     </View>
   );
 }

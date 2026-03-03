@@ -10,10 +10,6 @@ export async function getPublicTrips(limit = 20) {
   return apiFetch<any[]>(`/trips/public?limit=${limit}`);
 }
 
-/** All trips that belong to one user */
-export async function getUserTrips(userId: string) {
-  return apiFetch<any[]>(`/trips/user/${userId}`);
-}
 
 /** Delete a trip (user must own it — enforced by backend) */
 export async function deleteTrip(tripId: string) {
