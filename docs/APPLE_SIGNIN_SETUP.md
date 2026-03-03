@@ -1,175 +1,168 @@
 # Apple Sign-In Setup Guide
 
-This document explains how to complete Apple Sign-In integration once you have an Apple Developer account.
+Ce document explique comment configurer Apple Sign-In pour l'application Oneday.
 
-## Prerequisites
+## Informations de l'application
+
+| Valeur | |
+|--------|---|
+| **Bundle Identifier** | `com.onedaytravel.mobile` |
+| **Service ID** | `com.onedaytravel.mobile.auth` |
+| **App Name** | Oneday |
+
+---
+
+## Prérequis
 
 - Apple Developer Program membership ($99/year)
-- Access to [Apple Developer Portal](https://developer.apple.com/)
-- Access to [Supabase Dashboard](https://supabase.com/dashboard)
+- Accès au [Apple Developer Portal](https://developer.apple.com/account/resources/identifiers/list)
+- Accès au [Supabase Dashboard](https://supabase.com/dashboard)
 
 ---
 
-## Step 1: Configure App ID in Apple Developer Portal
+## Étape 1 : Configurer l'App ID dans Apple Developer Portal
 
-1. Go to **Certificates, Identifiers & Profiles**(https://developer.apple.com/account/resources) > **Identifiers**
-2. Select your App ID (`com.onedaytravel.app`) or create it if it doesn't exist
-3. Enable **Sign in with Apple** capability
-4. Click **Save**
-
----
-
-## Step 2: Create a Service ID (for Supabase)
-
-Supabase needs a Service ID to handle the OAuth flow on the server side.
-
-1. Go to **Certificates, Identifiers & Profiles** > **Identifiers**
-2. Click **+** to register a new identifier
-3. Select **Services IDs** and click **Continue**
-4. Enter:
-   - **Description**: `Oneday Web Auth`
-   - **Identifier**: `com.onedaytravel.app.auth` (must be different from App ID)
-5. Click **Continue** then **Register**
-6. Click on the newly created Service ID
-7. Enable **Sign in with Apple** and click **Configure**
-8. Set:
-   - **Primary App ID**: `com.onedaytravel.app`
-   - **Domains**: `ylehqgyfkwgeusreawdo.supabase.co` (your Supabase project domain)
-   - **Return URLs**: `https://ylehqgyfkwgeusreawdo.supabase.co/auth/v1/callback`
-9. Click **Save**
+1. Va sur **[Identifiers](https://developer.apple.com/account/resources/identifiers/list)**
+2. Trouve ou crée l'App ID `com.onedaytravel.mobile`
+3. Clique dessus pour l'éditer
+4. Scroll jusqu'à **Sign in with Apple** et **coche la case**
+5. Clique **Save**
 
 ---
 
-## Step 3: Create a Private Key
+## Étape 2 : Créer un Service ID
 
-1. Go to **Certificates, Identifiers & Profiles** > **Keys**
-2. Click **+** to create a new key
-3. Enter:
-   - **Key Name**: `Oneday Apple Sign-In Key`
-4. Enable **Sign in with Apple** and click **Configure**
-5. Select your Primary App ID (`com.onedaytravel.app`)
-6. Click **Save** then **Continue** then **Register**
-7. **Download the key file** (`.p8`) - you can only download it once!
-8. Note the **Key ID** displayed on the screen
+Le Service ID est nécessaire pour que Supabase puisse valider les tokens Apple.
 
----
-
-## Step 4: Get Your Team ID
-
-1. Go to [Apple Developer Account](https://developer.apple.com/account)
-2. Look at the top right or in **Membership Details**
-3. Note your **Team ID** (10-character alphanumeric string)
-
----
-
-## Step 5: Configure Supabase
-
-1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
-2. Select your project
-3. Go to **Authentication** > **Providers**
-4. Find **Apple** and click to configure
-5. Enable Apple provider
-6. Fill in:
-   - **Client ID (Service ID)**: `com.onedaytravel.app.auth`
-   - **Secret Key**: Content of the `.p8` file you downloaded
-   - **Key ID**: The Key ID from Step 3
-   - **Team ID**: Your Team ID from Step 4
-7. Click **Save**
+1. Va sur **[Identifiers](https://developer.apple.com/account/resources/identifiers/list)**
+2. Clique sur **+** (bouton bleu en haut)
+3. Sélectionne **Services IDs** puis **Continue**
+4. Remplis :
+   - **Description** : `Oneday Auth Service`
+   - **Identifier** : `com.onedaytravel.mobile.auth`
+5. Clique **Continue** puis **Register**
+6. **Clique sur le Service ID** que tu viens de créer
+7. **Coche** "Sign in with Apple" et clique sur **Configure**
+8. Dans la popup :
+   - **Primary App ID** : Sélectionne `com.onedaytravel.mobile`
+   - **Domains and Subdomains** : Ajoute ton domaine Supabase (ex: `ylehqgyfkwgeusreawdo.supabase.co`)
+   - **Return URLs** : Ajoute `https://ylehqgyfkwgeusreawdo.supabase.co/auth/v1/callback`
+9. Clique **Save** puis **Continue** puis **Save**
 
 ---
 
-## Step 6: Rebuild the App
+## Étape 3 : Créer une Private Key
 
-After configuring everything, rebuild the iOS app:
+1. Va sur **[Keys](https://developer.apple.com/account/resources/authkeys/list)**
+2. Clique sur **+** (bouton bleu)
+3. Remplis :
+   - **Key Name** : `Oneday Sign In Key`
+4. **Coche** "Sign in with Apple" et clique **Configure**
+5. Sélectionne `com.onedaytravel.mobile` comme Primary App ID
+6. Clique **Save** puis **Continue** puis **Register**
+7. **TÉLÉCHARGE LE FICHIER .p8** (tu ne peux le télécharger qu'une seule fois !)
+8. **Note le Key ID** affiché (ex: `ABC123XYZ`)
+
+---
+
+## Étape 4 : Récupérer ton Team ID
+
+1. Va sur [Apple Developer Account](https://developer.apple.com/account)
+2. Regarde en haut à droite ou dans **Membership Details**
+3. Note ton **Team ID** (10 caractères, ex: `ABCD1234EF`)
+
+---
+
+## Étape 5 : Configurer Supabase
+
+1. Va sur ton [Supabase Dashboard](https://supabase.com/dashboard)
+2. Sélectionne ton projet
+3. Va dans **Authentication** > **Providers**
+4. Trouve **Apple** et clique pour configurer
+5. **Active** le provider Apple
+6. Remplis :
+   - **Client ID (Service ID)** : `com.onedaytravel.mobile.auth`
+   - **Secret Key** : Colle le **contenu complet** du fichier `.p8` (incluant `-----BEGIN PRIVATE KEY-----` et `-----END PRIVATE KEY-----`)
+   - **Key ID** : Le Key ID de l'étape 3
+   - **Team ID** : Ton Team ID de l'étape 4
+7. Clique **Save**
+
+---
+
+## Étape 6 : Rebuild l'application iOS
+
+Après avoir tout configuré, rebuild l'app :
 
 ```bash
-# Clean and regenerate native project
+# Nettoie et regénère le projet natif
 rm -rf ios
 npx expo prebuild --platform ios --clean
 
-# Open in Xcode
+# Ouvre dans Xcode
 open ios/Oneday.xcworkspace
 ```
 
-In Xcode:
-1. Select the **Oneday** target
-2. Go to **Signing & Capabilities**
-3. Verify **Sign in with Apple** capability is present
-4. Build and run on a device
+Dans Xcode :
+1. Sélectionne la target **Oneday**
+2. Va dans **Signing & Capabilities**
+3. Vérifie que **Sign in with Apple** est présent
+4. Build et run sur un **appareil physique** (pas le simulateur)
 
 ---
 
-## Testing
+## Checklist de vérification
 
-1. Launch the app on a physical iOS device (iOS 13+)
-2. Go to the login screen
-3. Tap **Continuer avec Apple**
-4. Complete the Apple authentication flow
-5. You should be logged in
+Avant de tester, vérifie :
+
+- [ ] App ID `com.onedaytravel.mobile` a "Sign in with Apple" activé
+- [ ] Service ID `com.onedaytravel.mobile.auth` existe et est configuré
+- [ ] Le Service ID a le bon domaine Supabase et Return URL
+- [ ] Private Key (.p8) a été créée et téléchargée
+- [ ] Supabase Apple provider est activé avec les bonnes valeurs
+- [ ] L'app a été rebuild avec `expo prebuild --clean`
 
 ---
 
 ## Troubleshooting
 
+### "Connexion Apple impossible" (erreur générique)
+
+**Cause la plus fréquente** : Configuration Supabase incorrecte.
+
+Vérifie dans Supabase :
+1. Le **Client ID** doit être le **Service ID** (`com.onedaytravel.mobile.auth`), pas le bundle identifier
+2. La **Secret Key** doit inclure les lignes `-----BEGIN PRIVATE KEY-----` et `-----END PRIVATE KEY-----`
+3. Le **Key ID** et **Team ID** doivent être corrects
+
 ### "Apple Sign-In is not available on this device"
-- Apple Sign-In requires iOS 13 or later
-- Simulators may not fully support Apple Sign-In
-- Test on a physical device
+
+- Nécessite iOS 13+
+- Les simulateurs ne supportent pas toujours Apple Sign-In
+- Teste sur un **appareil physique**
+
+### Le bouton Apple n'apparaît pas
+
+- Normal sur Android (le bouton est masqué automatiquement)
+- Sur iOS, vérifie que `AppleAuthentication.isAvailableAsync()` retourne `true`
 
 ### "Invalid client_id"
-- Verify the Service ID matches exactly in Supabase
-- Check that the Service ID is configured with Sign in with Apple enabled
+
+- Vérifie que le Service ID dans Supabase correspond exactement à celui créé dans Apple Developer Portal
+- Le Service ID doit être `com.onedaytravel.mobile.auth` (pas le bundle identifier)
 
 ### "Invalid redirect_uri"
-- Verify the Return URL in Apple Developer Portal matches Supabase callback URL
-- Format: `https://<your-project>.supabase.co/auth/v1/callback`
 
-### "No identity token received"
-- User may have cancelled the authentication
-- Try again and complete the Face ID/Touch ID verification
-
-### Apple Sign-In button not showing
-- Check `appleAvailable` state - it's false if the device doesn't support it
-- Apple Sign-In is not available on Android (the button is hidden)
+- Vérifie que le Return URL dans Apple Developer Portal correspond exactement à Supabase :
+  `https://[ton-projet].supabase.co/auth/v1/callback`
 
 ---
 
-## Summary of Values Needed
+## Résumé des valeurs
 
-| Value | Where to Find | Where to Use |
-|-------|--------------|--------------|
-| **App ID** | Apple Developer Portal > Identifiers | Xcode project |
-| **Service ID** | Create in Apple Developer Portal | Supabase Client ID |
-| **Team ID** | Apple Developer Account > Membership | Supabase |
-| **Key ID** | Apple Developer Portal > Keys | Supabase |
-| **Private Key (.p8)** | Download when creating key | Supabase Secret Key |
-
----
-
-## Code Already Implemented
-
-The following code changes have been made and are ready to use:
-
-### app.json
-- Added `expo-apple-authentication` plugin
-- Added `usesAppleSignIn: true` for iOS
-- Added `com.apple.developer.applesignin` entitlement
-
-### context/AuthContext.tsx
-- Added `signInWithApple()` function using `expo-apple-authentication`
-- Uses Supabase `signInWithIdToken()` with Apple provider
-
-### app/login.tsx
-- Added Apple Sign-In button (only visible on iOS devices that support it)
-- Button styled to match Google Sign-In button
-
----
-
-## Android Support
-
-Apple Sign-In is **only available on iOS**. The button is automatically hidden on Android devices.
-
-If you want to support Apple Sign-In on Android in the future, you would need to:
-1. Implement a web-based OAuth flow
-2. Use `WebBrowser.openAuthSessionAsync()` similar to Google Sign-In
-3. This requires additional server-side configuration
+| Valeur | Où la trouver | Où l'utiliser |
+|--------|---------------|---------------|
+| **Bundle ID** | `app.json` | Apple Developer Portal (App ID) |
+| **Service ID** | Tu le crées | Apple Portal + Supabase Client ID |
+| **Team ID** | Apple Developer > Membership | Supabase |
+| **Key ID** | Apple Developer > Keys | Supabase |
+| **Private Key (.p8)** | Téléchargé lors de la création | Supabase Secret Key |

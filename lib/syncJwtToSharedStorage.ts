@@ -14,14 +14,14 @@ export async function syncJwtToSharedStorage(): Promise<void> {
     }
 
     await SecureStore.setItemAsync('supabase_jwt', session.access_token, {
-      accessGroup: 'group.com.onedaytravel.app.shared',
+      accessGroup: 'group.com.onedaytravel.mobile.shared',
     });
     console.log('[syncJwt] JWT saved');
 
     // Also store user_id for the share extension
     if (session.user?.id) {
       await SecureStore.setItemAsync('supabase_user_id', session.user.id, {
-        accessGroup: 'group.com.onedaytravel.app.shared',
+        accessGroup: 'group.com.onedaytravel.mobile.shared',
       });
       console.log('[syncJwt] User ID saved:', session.user.id);
     }

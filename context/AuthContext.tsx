@@ -75,9 +75,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const getOrigin = () => {
     if (Platform.OS === "web") {
-      return "https://bombo.app";
+      return "https://oneday.app";
     }
-    return "bombo://app";
+    return "oneday://app";
   };
 
   useEffect(() => {

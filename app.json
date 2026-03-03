@@ -10,12 +10,12 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.onedaytravel.app",
+      "bundleIdentifier": "com.onedaytravel.mobile",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
-        "com.apple.security.application-groups": ["group.com.onedaytravel.app.shared"],
+        "com.apple.security.application-groups": ["group.com.onedaytravel.mobile.shared"],
         "com.apple.developer.applesignin": ["Default"]
       },
       "usesAppleSignIn": true
@@ -29,7 +29,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.onedaytravel.app"
+      "package": "com.onedaytravel.mobile"
     },
     "web": {
       "output": "static",
