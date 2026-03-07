@@ -12,6 +12,17 @@ import { useCallback, useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { syncJwtToSharedStorage } from '@/lib/syncJwtToSharedStorage';
 import { useAndroidShareHandler } from '@/hooks/useAndroidShareHandler';
+import { useFonts, Righteous_400Regular } from '@expo-google-fonts/righteous';
+import {
+  DMSans_400Regular,
+  DMSans_500Medium,
+  DMSans_600SemiBold,
+  DMSans_700Bold,
+} from '@expo-google-fonts/dm-sans';
+import * as SplashScreen from 'expo-splash-screen';
+
+// Keep splash screen visible while loading fonts
+SplashScreen.preventAutoHideAsync();
 
 function AuthGate({ onRetry }: { onRetry: () => void }) {
   const { group, isPasswordRecovery } = useAuthGuardState();
@@ -55,6 +66,22 @@ export default function RootLayout() {
   const [retryKey, setRetryKey] = useState(0);
   const handleRetry = useCallback(() => setRetryKey((k) => k + 1), []);
 
+  // Load custom fonts
+  const [fontsLoaded] = useFonts({
+    Righteous: Righteous_400Regular,
+    DMSans: DMSans_400Regular,
+    'DMSans-Medium': DMSans_500Medium,
+    'DMSans-SemiBold': DMSans_600SemiBold,
+    'DMSans-Bold': DMSans_700Bold,
+  });
+
+  // Hide splash screen once fonts are loaded
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
   // Sync JWT to shared storage for iOS Share Extension
   useEffect(() => {
     if (Platform.OS !== 'ios') return;
@@ -74,6 +101,11 @@ export default function RootLayout() {
 
   // Handle Android share intent
   useAndroidShareHandler();
+
+  // Don't render until fonts are loaded
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <SafeAreaProvider>

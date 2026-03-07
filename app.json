@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "oneday",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.onedaytravel.mobile",
@@ -28,7 +27,6 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.onedaytravel.mobile"
     },
@@ -39,6 +37,9 @@
     "plugins": [
       "expo-router",
       "expo-apple-authentication",
+      "expo-font",
+      "expo-image",
+      "expo-web-browser",
       [
         "expo-splash-screen",
         {

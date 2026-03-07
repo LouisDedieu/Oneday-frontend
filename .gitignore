@@ -48,3 +48,6 @@ app-example
 /.vscode/
 /.env
 /screenshots/
+
+*storybook.log
+storybook-static
