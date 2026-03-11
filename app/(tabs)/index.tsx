@@ -138,14 +138,14 @@ function EmptyState({ onAnalysisStarted, isSubmitting }: EmptyStateProps) {
 
         {/* Social Links */}
         <View className="flex-row items-center justify-center gap-6">
-          <TouchableOpacity className="flex-row items-center gap-2" activeOpacity={0.7}>
+          <TouchableOpacity className="row-center" activeOpacity={0.7}>
             <Icon name="tiktok-fill" color={colors.social} size={17} />
             <Text className="font-dmsans-medium text-micro text-social">TikTok</Text>
           </TouchableOpacity>
 
           <View className="w-px h-4.5 bg-divider" />
 
-          <TouchableOpacity className="flex-row items-center gap-2" activeOpacity={0.7}>
+          <TouchableOpacity className="row-center" activeOpacity={0.7}>
             <Icon name="instagram-line" color={colors.social} size={17} />
             <Text className="font-dmsans-medium text-micro text-social">Instagram Reels</Text>
           </TouchableOpacity>
@@ -272,11 +272,11 @@ function JobsList({
     <View className="mb-4">
       {/* Main Title */}
       <View className="flex-row flex-wrap mb-4">
-        <Text className="font-righteous text-title text-text-primary">
+        <Text className="section-title">
           Transformez une{' '}
         </Text>
         <Text
-          className="font-righteous text-title text-accent"
+          className="section-title-accent"
           style={{
             textShadowColor: colors.shadowDark,
             textShadowOffset: { width: 0, height: 4 },
@@ -285,7 +285,7 @@ function JobsList({
         >
           vidéo
         </Text>
-        <Text className="font-righteous text-title text-text-primary">
+        <Text className="section-title">
           {' '}en itinéraire.
         </Text>
       </View>
@@ -318,11 +318,11 @@ function JobsList({
 
       {/* Section Title */}
       <View className="flex-row gap-2">
-        <Text className="font-righteous text-title text-text-primary">
+        <Text className="section-title">
           Toutes tes
         </Text>
         <Text
-          className="font-righteous text-title text-accent"
+          className="section-title-accent"
           style={{
             textShadowColor: colors.shadowDark,
             textShadowOffset: { width: 0, height: 4 },

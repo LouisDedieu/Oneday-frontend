@@ -384,7 +384,7 @@ export default function CityReviewPage() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center">
+      <View className="center-content">
         <Loader size={32} color="#60a5fa" />
       </View>
     );
@@ -392,8 +392,8 @@ export default function CityReviewPage() {
 
   if (!city) {
     return (
-      <View className="flex-1 items-center justify-center gap-4">
-        <Text className="text-white/60 font-dmsans">Ville introuvable</Text>
+      <View className="center-content gap-4">
+        <Text className="text-body-muted">Ville introuvable</Text>
         <Button onPress={() => router.navigate('/(tabs)')}>Retour</Button>
       </View>
     );
@@ -415,7 +415,7 @@ export default function CityReviewPage() {
       <View className="flex-1">
         {/* ── Header ── */}
         <View
-          className="bg-[#1e1a64] px-4 py-4"
+          className="bg-surface-secondary px-4 py-4"
           style={{
             paddingTop: insets.top + 16,
             borderBottomWidth: 1,
@@ -428,13 +428,13 @@ export default function CityReviewPage() {
                 <Icon name={'arrow-left-s-line'} size={24} color="rgba(255,255,255,0.6)" />
               </View>
             </Pressable>
-            <View className="flex-1 min-w-0">
-              <Text className="text-lg font-bold text-white font-righteous" numberOfLines={1}>
+            <View className="flex-min-width">
+              <Text className="title-lg-bold" numberOfLines={1}>
                 {city.city_title}
               </Text>
               <View className="flex-row items-center gap-1 mt-0.5">
                 <Icon name={'map-pin-2-line'} size={12} color="#a855f7" />
-                <Text className="text-sm text-white/60 font-dmsans">
+                <Text className="text-sm text-body-muted">
                   {city.city_name}, {city.country} · {totalHighlights} points
                 </Text>
               </View>
@@ -462,7 +462,7 @@ export default function CityReviewPage() {
                     borderColor: 'rgba(168,85,247,0.3)',
                   }}
                 >
-                  <View className="flex-row items-center gap-2">
+                  <View className="row-center">
                     <Icon name={'merge-cells-horizontal'} size={18} color="#a855f7" />
                     <View className="flex-1">
                       <Text className="text-sm text-purple-300 font-dmsans-medium">
@@ -493,15 +493,15 @@ export default function CityReviewPage() {
 
               {/* Selection panel - compact */}
               <View
-                className="mx-4 mt-3 bg-[#1e1a64] rounded-xl p-3"
+                className="mx-4 mt-3 bg-surface-secondary rounded-xl p-3"
                 style={{ borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
               >
                 <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center gap-2">
+                  <View className="row-center">
                     <Text className="text-sm font-medium text-white font-righteous">
                       {validatedCount}/{totalHighlights}
                     </Text>
-                    <Text className="text-xs text-white/50 font-dmsans">points</Text>
+                    <Text className="label-micro">points</Text>
                   </View>
                   <View className="flex-row gap-1.5">
                     {(['Tout', 'Aucun'] as const).map((label) => {
@@ -617,12 +617,12 @@ export default function CityReviewPage() {
         >
           <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
             <View
-              className="bg-[#1e1a64] rounded-t-3xl p-4"
+              className="bg-surface-secondary rounded-t-3xl p-4"
               style={{ paddingBottom: insets.bottom + 16 }}
             >
               {/* Header */}
               <View className="flex-row items-center justify-between mb-4">
-                <Text className="text-lg font-bold text-white font-righteous">Ajouter un point</Text>
+                <Text className="title-lg-bold">Ajouter un point</Text>
                 <TouchableOpacity onPress={() => setShowAddModal(false)} className="p-2">
                   <Icon name={'close-line'} size={20} color="rgba(255,255,255,0.5)" />
                 </TouchableOpacity>

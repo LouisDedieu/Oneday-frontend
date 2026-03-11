@@ -120,10 +120,10 @@ function SpotReviewCard({ spot, onUpdate, onDelete }: SpotReviewCardProps) {
       <View className="rounded-lg p-2.5" style={{ backgroundColor: cardBg, borderWidth: 1, borderColor: cardBorder }}>
         <View className="flex-row items-start gap-2">
           <Text className="font-dmsans" style={{ fontSize: 16 }}>{TYPE_EMOJI[spot.spot_type ?? ''] ?? '📍'}</Text>
-          <View className="flex-1 min-w-0">
+          <View className="flex-min-width">
             {/* Nom + actions */}
             <View className="flex-row items-center justify-between gap-1">
-              <View className="flex-row items-center gap-1 flex-1 min-w-0">
+              <View className="flex-row items-center gap-1 flex-min-width">
                 <Text className="text-white font-dmsans-semibold text-sm flex-shrink-1" numberOfLines={1}>{spot.name}</Text>
                 {spot.highlight && <Icon name={'star-fill'} size={12} color="#facc15" fill="#facc15" />}
               </View>
@@ -163,11 +163,11 @@ function SpotReviewCard({ spot, onUpdate, onDelete }: SpotReviewCardProps) {
               <Text className="text-xs text-white/50 mt-0.5 font-dmsans" numberOfLines={1}>{spot.address}</Text>
             )}
 
-            <View className="flex-row items-center gap-2 mt-1 flex-wrap">
+            <View className="row-center mt-1 flex-wrap">
               {!!spot.duration_minutes && (
                 <View className="flex-row items-center gap-0.5">
                   <Icon name={'time-line'} size={12} color="rgba(255,255,255,0.5)" />
-                  <Text className="text-xs text-white/50 font-dmsans">{spot.duration_minutes}min</Text>
+                  <Text className="label-micro">{spot.duration_minutes}min</Text>
                 </View>
               )}
               {spot.price_range && (
@@ -348,7 +348,7 @@ function DayReviewCard({ day, isExpanded, onToggle, onValidatedChange, onSpotUpd
     }
   }, [isExpanded, included]);
 
-  // Glassmorphism: included → bg-[#1e1a64] border-white/10, excluded → bg-[#1e1a64]/30 border-white/5
+  // Glassmorphism: included → bg-surface-secondary border-white/10, excluded → bg-surface-secondary/30 border-white/5
   const cardBg     = included ? '#1e1a64' : '#1e1a644D';
   const cardBorder = included ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)';
   // Barre latérale colorée: accent violet si inclus, transparent sinon
@@ -364,7 +364,7 @@ function DayReviewCard({ day, isExpanded, onToggle, onValidatedChange, onSpotUpd
         {/* Barre latérale colorée */}
         <View style={{ width: 2, backgroundColor: barColor }} />
 
-        <View className="flex-1 min-w-0">
+        <View className="flex-min-width">
           {/* Header */}
           <View className="flex-row items-center px-3 py-3 gap-3">
 
@@ -380,7 +380,7 @@ function DayReviewCard({ day, isExpanded, onToggle, onValidatedChange, onSpotUpd
             <TouchableOpacity
               onPress={included ? onToggle : undefined}
               disabled={!included}
-              className="flex-1 min-w-0"
+              className="flex-min-width"
             >
               <Text
                 className="font-righteous text-sm"
@@ -400,7 +400,7 @@ function DayReviewCard({ day, isExpanded, onToggle, onValidatedChange, onSpotUpd
             </TouchableOpacity>
 
             {/* Actions droite : toggle pill + chevron */}
-            <View className="flex-row items-center gap-2 flex-shrink-0">
+            <View className="row-center flex-shrink-0">
               <SecondaryButton
                 title={included ? 'Inclus' : 'Inclure'}
                 active={included}
@@ -447,9 +447,9 @@ function DayReviewCard({ day, isExpanded, onToggle, onValidatedChange, onSpotUpd
                 {/* Repas — web: breakfast/lunch/dinner */}
                 {(day.breakfast_spot || day.lunch_spot || day.dinner_spot) && (
                   <View className="pt-2 gap-1" style={{ borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' }}>
-                    {day.breakfast_spot && <Text className="text-xs text-white/60 font-dmsans">🌅 {day.breakfast_spot}</Text>}
-                    {day.lunch_spot     && <Text className="text-xs text-white/60 font-dmsans">☀️ {day.lunch_spot}</Text>}
-                    {day.dinner_spot    && <Text className="text-xs text-white/60 font-dmsans">🌙 {day.dinner_spot}</Text>}
+                    {day.breakfast_spot && <Text className="text-xs text-body-muted">🌅 {day.breakfast_spot}</Text>}
+                    {day.lunch_spot     && <Text className="text-xs text-body-muted">☀️ {day.lunch_spot}</Text>}
+                    {day.dinner_spot    && <Text className="text-xs text-body-muted">🌙 {day.dinner_spot}</Text>}
                   </View>
                 )}
 
@@ -602,7 +602,7 @@ export default function ReviewModePage() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center">
+      <View className="center-content">
         <Loader size={32} color="#60a5fa" />
       </View>
     );
@@ -610,8 +610,8 @@ export default function ReviewModePage() {
 
   if (!trip) {
     return (
-      <View className="flex-1 items-center justify-center gap-4">
-        <Text className="text-white/60 font-dmsans">Voyage introuvable</Text>
+      <View className="center-content gap-4">
+        <Text className="text-body-muted">Voyage introuvable</Text>
         <Button onPress={() => router.back()}>Retour</Button>
       </View>
     );
@@ -628,9 +628,9 @@ export default function ReviewModePage() {
     <View className="flex-1">
 
       {/* ── Header ── */}
-      {/* web: sticky bg-[#1e1a64]/95 backdrop-blur border-b border-white/10 */}
+      {/* web: sticky bg-surface-secondary/95 backdrop-blur border-b border-white/10 */}
       <View
-        className="bg-[#1e1a64] px-4 py-4"
+        className="bg-surface-secondary px-4 py-4"
         style={{ paddingTop: insets.top + 16, borderBottomWidth: 1, borderBottomColor: '#27272a' }}
       >
         <View className="flex-row items-center gap-3">
@@ -642,11 +642,11 @@ export default function ReviewModePage() {
               <Icon name={'arrow-left-s-line'} size={24} color="#a1a1aa" />
             </View>
           </Pressable>
-          <View className="flex-1 min-w-0">
-            <Text className="text-lg font-bold text-white font-righteous" numberOfLines={1}>{trip.trip_title}</Text>
+          <View className="flex-min-width">
+            <Text className="title-lg-bold" numberOfLines={1}>{trip.trip_title}</Text>
             <View className="flex-row items-center gap-1 mt-0.5">
               <Icon name={'map-pin-2-line'} size={12} color="#71717a" />
-              <Text className="text-sm text-white/60 font-dmsans">
+              <Text className="text-sm text-body-muted">
                 {trip.destination} · {trip.duration_days} jours
               </Text>
             </View>
@@ -659,28 +659,28 @@ export default function ReviewModePage() {
         {/* ── Résumé trip ── */}
         {/* web: badges vibe/duration/isSaved + creator handle + source_url */}
         <View
-          className="bg-[#1e1a64] rounded-xl p-4 gap-2"
+          className="bg-surface-secondary rounded-xl p-4 gap-2"
           style={{ borderWidth: 1, borderColor: '#27272a' }}
         >
           {/* Badges */}
           <View className="flex-row flex-wrap gap-2">
             {trip.vibe && (
               <View
-                className="px-2 py-0.5 rounded-full"
+                className="pill-small"
                 style={{ backgroundColor: 'rgba(168,85,247,0.2)', borderWidth: 1, borderColor: 'rgba(168,85,247,0.3)' }}
               >
                 <Text className="font-dmsans" style={{ fontSize: 12, color: '#d8b4fe' }}>{trip.vibe}</Text>
               </View>
             )}
             <View
-              className="px-2 py-0.5 rounded-full"
+              className="pill-small"
               style={{ backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
             >
               <Text className="font-dmsans" style={{ fontSize: 12, color: '#d4d4d8' }}>{trip.duration_days} jours</Text>
             </View>
             {isSaved && (
               <View
-                className="px-2 py-0.5 rounded-full"
+                className="pill-small"
                 style={{ backgroundColor: 'rgba(34,197,94,0.2)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' }}
               >
                 <Text className="font-dmsans" style={{ fontSize: 12, color: '#86efac' }}>✓ Déjà sauvegardé</Text>
@@ -690,8 +690,8 @@ export default function ReviewModePage() {
 
           {/* Créateur */}
           {trip.content_creator_handle && (
-            <Text className="text-xs text-white/50 font-dmsans">
-              📹 Créateur : <Text className="text-white/60 font-dmsans">@{trip.content_creator_handle}</Text>
+            <Text className="label-micro">
+              📹 Créateur : <Text className="text-body-muted">@{trip.content_creator_handle}</Text>
             </Text>
           )}
 
@@ -709,7 +709,7 @@ export default function ReviewModePage() {
 
         {/* ── Panneau sélection ── */}
         <View
-          className="bg-[#1e1a64] rounded-xl p-4"
+          className="bg-surface-secondary rounded-xl p-4"
           style={{ borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
         >
           {/* Titre + bulk actions */}

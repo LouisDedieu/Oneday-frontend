@@ -350,7 +350,7 @@ export default function TripDetailPage() {
         className="flex-1"
         resizeMode="cover"
       >
-        <View className="flex-1 items-center justify-center" style={{ paddingTop: insets.top }}>
+        <View className="center-content" style={{ paddingTop: insets.top }}>
           <Loader size={48} />
         </View>
       </ImageBackground>
@@ -364,13 +364,13 @@ export default function TripDetailPage() {
         className="flex-1"
         resizeMode="cover"
       >
-        <View className="flex-1 items-center justify-center px-4" style={{ paddingTop: insets.top }}>
+        <View className="center-content px-4" style={{ paddingTop: insets.top }}>
           <Text className="text-zinc-400 text-sm mb-4 font-dmsans">Voyage introuvable.</Text>
           <TouchableOpacity
             onPress={() => router.replace('/(tabs)/trips')}
             className="bg-zinc-800 px-6 py-3 rounded-lg"
           >
-            <Text className="text-white font-medium font-dmsans">Mes voyages</Text>
+            <Text className="text-label">Mes voyages</Text>
           </TouchableOpacity>
         </View>
       </ImageBackground>
@@ -621,7 +621,7 @@ export default function TripDetailPage() {
                         onPress={enterEditMode}
                       />
                     ) : (
-                      <View className="flex-row items-center gap-2">
+                      <View className="row-center">
                         <SecondaryButton title="Annuler" variant="square" size="sm" onPress={cancelEditMode} />
                         <SecondaryButton
                           title="OK"
@@ -844,7 +844,7 @@ function StatCell({value, label }: {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <View className="items-center py-14">
+    <View className="empty-state">
       <Icon name={"information-2-fill"} size={32} color="#52525b" style={{ opacity: 0.4 }} />
       <Text className="text-sm text-zinc-500 mt-2 font-dmsans">{message}</Text>
     </View>

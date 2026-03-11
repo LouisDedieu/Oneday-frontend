@@ -15,7 +15,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 // ── Loading Screen ─────────────────────────────────────────────────────────────
 export function LoadingScreen() {
   return (
-    <View className="flex-1 items-center justify-center">
+    <View className="center-content">
       <Loader size={48} />
       <Text className="text-white/50 mt-3 text-sm">Connexion en cours…</Text>
     </View>
@@ -25,7 +25,7 @@ export function LoadingScreen() {
 // ── Network Error Screen ───────────────────────────────────────────────────────
 export function NetworkErrorScreen({ onRetry }: { onRetry: () => void }) {
   return (
-    <View className="flex-1 items-center justify-center px-6">
+    <View className="center-content px-6">
       <View className="w-14 h-14 rounded-full items-center justify-center mb-4 bg-red-500/15 border border-red-500/30">
         <Icon name="wifi-off-line" size={24} color="#f87171" />
       </View>
@@ -43,7 +43,7 @@ export function EmailPendingScreen() {
   const router = useRouter();
   
   return (
-    <View className="flex-1 items-center justify-center px-6">
+    <View className="center-content px-6">
       <View className="w-14 h-14 rounded-full items-center justify-center mb-4 bg-blue-500/15 border border-blue-500/30">
         <Icon name="mail-check-line" size={24} color="#60a5fa" />
       </View>

@@ -1,3 +1,26 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  /* Layout & Containers */
+  .row-center { @apply flex-row items-center gap-2; }
+  .center-content { @apply flex-1 items-center justify-center; }
+  .flex-min-width { @apply flex-1 min-w-0; }
+  .empty-state { @apply items-center py-14; }
+
+  /* Typography - Headings */
+  .title-righteous { @apply text-white font-righteous; }
+  .section-title { @apply font-righteous text-title text-text-primary; }
+  .section-title-accent { @apply font-righteous text-title text-accent; }
+  .title-lg-bold { @apply text-lg font-bold text-white font-righteous; }
+
+  /* Typography - Body & Labels */
+  .label-micro { @apply text-xs text-white/50 font-dmsans; }
+  .text-muted-micro { @apply text-zinc-500 text-xs; }
+  .text-body-muted { @apply text-white/60 font-dmsans; }
+  .text-label { @apply text-white font-medium font-dmsans; }
+
+  /* Components */
+  .pill-small { @apply px-2 py-0.5 rounded-full; }
+}

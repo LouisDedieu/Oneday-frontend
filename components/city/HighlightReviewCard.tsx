@@ -145,9 +145,9 @@ export function HighlightReviewCard({
               </View>
 
               {/* Content */}
-              <View className="flex-1 min-w-0">
+              <View className="flex-min-width">
                 {/* Header: Name + Must-see */}
-                <View className="flex-row items-center gap-2">
+                <View className="row-center">
                   <Text
                     className="font-semibold flex-1"
                     numberOfLines={1}
@@ -159,7 +159,7 @@ export function HighlightReviewCard({
                     {highlight.name}
                   </Text>
                   {highlight.is_must_see && included && (
-                    <View className="flex-row items-center gap-1 bg-yellow-500/20 px-2 py-0.5 rounded-full">
+                    <View className="flex-row items-center gap-1 bg-yellow-500/20 pill-small">
                       <Icon name="star-fill" size={10} color="#facc15" />
                       <Text className="text-yellow-400 text-xs">Must-see</Text>
                     </View>
@@ -170,7 +170,7 @@ export function HighlightReviewCard({
                 <View className="flex-row items-center gap-2 mt-1 flex-wrap">
                   {highlight.subtype && (
                     <View
-                      className="px-2 py-0.5 rounded-full"
+                      className="pill-small"
                       style={{ backgroundColor: included ? `${categoryColor}22` : 'rgba(255,255,255,0.05)' }}
                     >
                       <Text style={{ color: included ? categoryColor : 'rgba(255,255,255,0.3)', fontSize: 11 }}>

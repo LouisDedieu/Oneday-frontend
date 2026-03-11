@@ -204,7 +204,7 @@ export default function SavedPage() {
         resizeMode="cover"
       >
         <View
-          className="flex-1 items-center justify-center"
+          className="center-content"
           style={{ paddingTop: insets.top }}
         >
           <Text className="text-sm text-error font-dmsans">Erreur : {error}</Text>
@@ -222,7 +222,7 @@ export default function SavedPage() {
         resizeMode="cover"
       >
         <View
-          className="flex-1 items-center justify-center"
+          className="center-content"
           style={{ paddingTop: insets.top }}
         >
           <Text className="text-text-secondary font-dmsans">Connectez-vous pour voir vos sauvegardes.</Text>
@@ -246,11 +246,11 @@ export default function SavedPage() {
       <View style={{ paddingTop: insets.top + 16, paddingHorizontal: 16 }}>
         {/* Title */}
         <View className="flex-row mb-4">
-          <Text className="font-righteous text-title text-text-primary">
+          <Text className="section-title">
             Ta{' '}
           </Text>
           <Text
-            className="font-righteous text-title text-accent"
+            className="section-title-accent"
             style={{
               textShadowColor: colors.shadowDark,
               textShadowOffset: { width: 0, height: 4 },

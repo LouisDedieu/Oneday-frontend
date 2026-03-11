@@ -215,7 +215,7 @@ export function InteractiveHeroMap({ destinations, highlightedCity }: Interactiv
     return (
       <View className="flex-1 flex-col items-center justify-center bg-zinc-950 gap-2">
         <SpinningLoader size={24} color="#3b82f6" />
-        <Text className="text-zinc-500 text-xs">Calcul de l'itinéraire...</Text>
+        <Text className="text-muted-micro">Calcul de l'itinéraire...</Text>
       </View>
     );
   }
@@ -223,7 +223,7 @@ export function InteractiveHeroMap({ destinations, highlightedCity }: Interactiv
   if (results.length === 0) {
     return (
       <View className="flex-1 items-center justify-center bg-zinc-950">
-        <Text className="text-zinc-500 text-xs">Impossible de localiser les étapes.</Text>
+        <Text className="text-muted-micro">Impossible de localiser les étapes.</Text>
       </View>
     );
   }

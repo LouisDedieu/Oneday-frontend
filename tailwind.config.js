@@ -33,6 +33,9 @@ module.exports = {
                 // Trip and City colors
                 'trip': '#656E57',
                 'city': '#336CA0',
+
+                // Surfaces
+                'surface-secondary': '#1e1a64',
             },
 
             // ── Font Families ──────────────────────────────────────────────────

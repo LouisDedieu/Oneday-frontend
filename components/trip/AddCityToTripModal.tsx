@@ -269,7 +269,7 @@ export function AddCityToTripModal({
           <Icon name="book-marked-line" size={22} color="#a855f7" />
         </View>
         <View className="flex-1">
-          <Text className="text-white font-righteous">Importer une ville sauvegardée</Text>
+          <Text className="title-righteous">Importer une ville sauvegardée</Text>
           <Text className="text-white/50 font-dmsans-medium text-xs mt-0.5">
             Depuis vos City Guides existants
           </Text>
@@ -289,7 +289,7 @@ export function AddCityToTripModal({
           <Icon name="pencil-line" size={22} color="#3b82f6" />
         </View>
         <View className="flex-1">
-          <Text className="text-white font-righteous">Ajouter une nouvelle ville</Text>
+          <Text className="title-righteous">Ajouter une nouvelle ville</Text>
           <Text className="text-white/50 font-dmsans-medium text-xs mt-0.5">
             Saisir un nom et localiser sur la carte
           </Text>
@@ -346,7 +346,7 @@ export function AddCityToTripModal({
                   <Icon name="building-line" size={20} color="#a855f7" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-white font-righteous">{city.city_title || city.city_name}</Text>
+                  <Text className="title-righteous">{city.city_title || city.city_name}</Text>
                   <View className="flex-row items-center gap-2 mt-0.5">
                     <Icon name="map-pin-line" size={12} color="rgba(255,255,255,0.5)" />
                     <Text className="text-white/50 font-dmsans text-xs">
@@ -502,7 +502,7 @@ export function AddCityToTripModal({
                   )}
                 </View>
                 <View className="flex-1">
-                  <Text className="text-white font-righteous">{cityLabel}</Text>
+                  <Text className="title-righteous">{cityLabel}</Text>
                   <View className="flex-row items-center gap-2 mt-0.5">
                     <Text className="text-white/50 font-dmsans-medium text-xs">{country}</Text>
                   </View>
@@ -558,7 +558,7 @@ export function AddCityToTripModal({
               }}
             >
               <View className="flex-row items-center justify-between p-4" style={{ borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' }}>
-                <View className="flex-row items-center gap-2">
+                <View className="row-center">
                   {backStep[step] && (
                     <TouchableOpacity
                       onPress={() => setStep(backStep[step]!)}

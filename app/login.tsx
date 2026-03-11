@@ -91,7 +91,7 @@ function Field({
     <View className="gap-1.5">
       <Text className="text-[11px] font-semibold text-white/50 uppercase tracking-[0.8px] font-dmsans">{label}</Text>
       <View
-        className={`flex-row items-center bg-[#1e1a64] rounded-[10px] border ${
+        className={`flex-row items-center bg-surface-secondary rounded-[10px] border ${
           error ? 'border-red-500/60' : 'border-white/10'
         }`}
       >
@@ -217,7 +217,7 @@ export default function Login() {
   // ── Email envoyé (signup) ──────────────────────────────────────────────────
   if (emailSent) {
     return (
-      <View className="flex-1 items-center justify-center p-6">
+      <View className="center-content p-6">
         <View className="w-16 h-16 rounded-full items-center justify-center mb-4 bg-blue-500/15 border border-blue-500/30">
           <Icon name="mail-check-line" size={28} color="#60a5fa" />
         </View>
@@ -227,7 +227,7 @@ export default function Login() {
           <Text className="text-white font-semibold font-dmsans">{email}</Text>.
           {'\n'}Cliquez dessus pour activer votre compte.
         </Text>
-        <View className="bg-[#1e1a64] border border-white/10 rounded-[20px] p-5 gap-4 w-full">
+        <View className="bg-surface-secondary border border-white/10 rounded-[20px] p-5 gap-4 w-full">
           <Text className="text-xs text-white/50 text-center font-dmsans">Vous n'avez rien reçu ?</Text>
           <TouchableOpacity
             className={`border border-white/10 rounded-[10px] h-11 items-center justify-center px-4 ${resending ? 'opacity-60' : ''}`}
@@ -252,7 +252,7 @@ export default function Login() {
   // ── Reset envoyé ───────────────────────────────────────────────────────────
   if (resetSent) {
     return (
-      <View className="flex-1 items-center justify-center p-6">
+      <View className="center-content p-6">
         <View className="w-16 h-16 rounded-full items-center justify-center mb-4 bg-emerald-500/15 border border-emerald-500/30">
           <Icon name="mail-send-line" size={28} color="#34d399" />
         </View>
@@ -297,7 +297,7 @@ export default function Login() {
         </View>
 
         {/* Card */}
-        <View className="bg-[#1e1a64] border border-white/10 rounded-[20px] p-5 gap-4">
+        <View className="bg-surface-secondary border border-white/10 rounded-[20px] p-5 gap-4">
           {/* Success banner */}
           {successMsg && (
             <View className="flex-row items-start gap-2.5 rounded-[10px] px-[14px] py-3 bg-emerald-500/10 border border-emerald-500/20">
@@ -310,7 +310,7 @@ export default function Login() {
           {flow === 'forgot' && (
             <TouchableOpacity className="flex-row items-center gap-1.5" onPress={() => setFlow('signin')} activeOpacity={0.7}>
               <Icon name="arrow-left-line" size={14} color="#71717a" />
-              <Text className="text-xs text-white/50 font-dmsans">Retour à la connexion</Text>
+              <Text className="label-micro">Retour à la connexion</Text>
             </TouchableOpacity>
           )}
 
@@ -372,7 +372,7 @@ export default function Login() {
           {flow !== 'forgot' && (
             <>
               <TouchableOpacity
-                className={`flex-row items-center justify-center gap-3 border border-white/10 bg-[#1e1a64] rounded-[10px] h-[46px] ${socialLoading ? 'opacity-50' : ''}`}
+                className={`flex-row items-center justify-center gap-3 border border-white/10 bg-surface-secondary rounded-[10px] h-[46px] ${socialLoading ? 'opacity-50' : ''}`}
                 onPress={handleGoogleSignIn}
                 disabled={socialLoading || loading || appleLoading}
                 activeOpacity={0.8}
@@ -389,7 +389,7 @@ export default function Login() {
 
               {appleAvailable && (
                 <TouchableOpacity
-                  className={`flex-row items-center justify-center gap-3 border border-white/10 bg-[#1e1a64] rounded-[10px] h-[46px] ${appleLoading ? 'opacity-50' : ''}`}
+                  className={`flex-row items-center justify-center gap-3 border border-white/10 bg-surface-secondary rounded-[10px] h-[46px] ${appleLoading ? 'opacity-50' : ''}`}
                   onPress={handleAppleSignIn}
                   disabled={appleLoading || loading || socialLoading}
                   activeOpacity={0.8}

@@ -235,7 +235,7 @@ export function CityHighlightsMap({
         className="items-center justify-center gap-2"
       >
         <Loader size={40} />
-        <Text className="text-zinc-500 text-xs">Localisation des points...</Text>
+        <Text className="text-muted-micro">Localisation des points...</Text>
       </View>
     );
   }
@@ -247,7 +247,7 @@ export function CityHighlightsMap({
         style={{ height, backgroundColor: '#18181b', borderRadius: 12 }}
         className="items-center justify-center"
       >
-        <Text className="text-zinc-500 text-xs">Aucun point a afficher</Text>
+        <Text className="text-muted-micro">Aucun point a afficher</Text>
       </View>
     );
   }

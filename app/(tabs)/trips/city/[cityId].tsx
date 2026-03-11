@@ -458,7 +458,7 @@ export default function CityDetailPage() {
         className="flex-1"
         resizeMode="cover"
       >
-        <View className="flex-1 items-center justify-center" style={{ paddingTop: insets.top }}>
+        <View className="center-content" style={{ paddingTop: insets.top }}>
           <Loader size={48} />
         </View>
       </ImageBackground>
@@ -473,13 +473,13 @@ export default function CityDetailPage() {
         className="flex-1"
         resizeMode="cover"
       >
-        <View className="flex-1 items-center justify-center px-4" style={{ paddingTop: insets.top }}>
+        <View className="center-content px-4" style={{ paddingTop: insets.top }}>
           <Text className="text-zinc-400 text-sm mb-4 font-dmsans">{error || 'Ville introuvable.'}</Text>
           <TouchableOpacity
             onPress={() => router.back()}
             className="bg-zinc-800 px-6 py-3 rounded-lg"
           >
-            <Text className="text-white font-medium font-dmsans">Retour</Text>
+            <Text className="text-label">Retour</Text>
           </TouchableOpacity>
         </View>
       </ImageBackground>
@@ -792,7 +792,7 @@ export default function CityDetailPage() {
                 ))}
 
                 {filteredHighlights.length === 0 && (
-                  <View className="items-center py-14">
+                  <View className="empty-state">
                     <Icon name={"information-2-fill"} size={32} color="#a1a1aa" style={{ opacity: 1 }} />
                     <Text className="text-sm text-zinc-400 mt-2 font-dmsans">Aucun point trouvé.</Text>
                   </View>
@@ -820,7 +820,7 @@ export default function CityDetailPage() {
               {budget === null ? (
                 <CityBudgetCard budget={budget} />
               ) : (
-                <View className="items-center py-14">
+                <View className="empty-state">
                   <Icon name={"information-2-fill"} size={32} color="#a1a1aa" style={{ opacity: 1 }} />
                   <Text className="text-sm text-zinc-400 mt-2 font-dmsans">Aucune information budget disponible.</Text>
                 </View>
@@ -834,7 +834,7 @@ export default function CityDetailPage() {
               {!practicalInfo ? (
                 <PracticalCard info={practicalInfo} />
               ) : (
-                <View className="items-center py-14">
+                <View className="empty-state">
                   <Icon name={"information-2-fill"} size={32} color="#a1a1aa" style={{ opacity: 1 }} />
                   <Text className="text-sm text-zinc-400 mt-2 font-dmsans">Aucune information pratique disponible.</Text>
                 </View>
