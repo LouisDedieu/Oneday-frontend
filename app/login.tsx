@@ -33,13 +33,15 @@ function friendlyError(msg: string, t: (key: string) => string): string {
 }
 
 // ── Password strength ──────────────────────────────────────────────────────────
-function PasswordStrength({ password, t }: { password: string; t: (key: string) => string }) {
-
+function PasswordStrength({ password, email, t }: { password: string; email: string; t: (key: string) => string }) {
+  if (!password) return null;
+  
   const checks = [
     password.length >= 8,
     /[A-Z]/.test(password),
     /[0-9]/.test(password),
     /[^a-zA-Z0-9]/.test(password),
+    password.toLowerCase() !== email.toLowerCase(),
   ];
   const score = checks.filter(Boolean).length;
   const levels = [
@@ -50,19 +52,20 @@ function PasswordStrength({ password, t }: { password: string; t: (key: string) 
     t('auth.strengthVeryStrong'),
   ];
   const colors = ['#ef4444', '#f97316', '#eab308', '#3b82f6', '#10b981'];
+  const color = colors[Math.min(score, 4)];
 
   return (
     <View className="mt-1">
       <View className="flex-row gap-1">
-        {[0, 1, 2, 3].map((i) => (
+        {[0, 1, 2, 3, 4].map((i) => (
           <View
             key={i}
             className="flex-1 h-1 rounded-sm"
-            style={{ backgroundColor: i < score ? colors[score] : 'rgba(255,255,255,0.1)' }}
+            style={{ backgroundColor: i < score ? color : 'rgba(255,255,255,0.1)' }}
           />
         ))}
       </View>
-      {password && <Text className="text-[11px] text-white/50 mt-1 font-dmsans">{levels[score]}</Text>}
+      <Text className="text-[11px] text-white/50 mt-1 font-dmsans">{levels[score]}</Text>
     </View>
   );
 }
@@ -168,8 +171,13 @@ export default function Login() {
         const { error } = await signIn(email, password);
         if (error) setError(friendlyError(error.message, t));
       } else if (flow === 'signup') {
-        if (password.length < 6) {
+        if (password.length < 8) {
           setError(t('auth.passwordTooShort'));
+          setLoading(false);
+          return;
+        }
+        if (password.toLowerCase() === email.toLowerCase()) {
+          setError(t('auth.passwordCannotBeEmail'));
           setLoading(false);
           return;
         }
@@ -349,7 +357,7 @@ export default function Login() {
               />
               {flow === 'signup' ? (
                 <View className="mt-2">
-                  <PasswordStrength password={password} t={t} />
+                  <PasswordStrength password={password} email={email} t={t} />
                 </View>
               ) : (
                 <TouchableOpacity onPress={() => setFlow('forgot')} activeOpacity={0.7} className="mt-2">
