@@ -25,6 +25,7 @@ import DraggableFlatList, {
 } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { isCitySaved, saveCity, unsaveCity, checkCityMatch, mergeCities } from '@/services/cityService';
+import { markNotificationsReadByEntity } from '@/services/notificationService';
 import { useAuth } from '@/context/AuthContext';
 import {
   fetchCityForReview,
@@ -81,6 +82,8 @@ export default function CityReviewPage() {
   // Load city data
   useEffect(() => {
     if (!cityId) return;
+    // Marquer les notifications liées comme lues
+    markNotificationsReadByEntity('city', cityId);
     fetchCityForReview(cityId).then((c) => {
       setCity(c);
       setLoading(false);

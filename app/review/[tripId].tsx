@@ -21,6 +21,7 @@ import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-remix-icon';
 import { isTripSaved, saveTrip, unsaveTrip } from '@/services/tripService';
+import { markNotificationsReadByEntity } from '@/services/notificationService';
 import { useAuth } from '@/context/AuthContext';
 import {
   fetchTripForReview,
@@ -516,6 +517,8 @@ export default function ReviewModePage() {
 
   useEffect(() => {
     if (!tripId) return;
+    // Marquer les notifications liées comme lues
+    markNotificationsReadByEntity('trip', tripId);
     fetchTripForReview(tripId).then((t) => {
       setTrip(t);
       setLoading(false);

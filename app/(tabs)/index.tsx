@@ -20,6 +20,7 @@ import {
   Animated,
   Easing,
 } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-remix-icon';
@@ -44,6 +45,7 @@ import {
   isValidUrl,
   isJobInProgress,
 } from '@/services/inboxService';
+import { markNotificationsReadByEntity } from '@/services/notificationService';
 
 import { colors } from '@/constants/colors';
 
@@ -489,11 +491,15 @@ export default function InboxPage() {
       await startAnalysis(url, user.id);
       await loadJobs(false);
 
-      Alert.alert(
-        t('inbox.analysisStarted'),
-        t('inbox.videoBeingAnalyzed'),
-        [{ text: t('common.ok') }]
-      );
+      // Envoyer une notification locale au lieu d'une Alert
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: t('inbox.analysisStarted'),
+          body: t('inbox.videoBeingAnalyzed'),
+          data: { type: 'analysis_started' },
+        },
+        trigger: null, // Notification immédiate
+      });
     } catch (err: any) {
       console.error('Failed to start analysis:', err);
       setJobs((prev) => prev.filter((j) => j.jobId !== optimisticJob.jobId));
@@ -528,6 +534,11 @@ export default function InboxPage() {
             try {
               await deleteInboxJob(job.jobId);
               setJobs((prev) => prev.filter((j) => j.jobId !== job.jobId));
+              // Marquer les notifications liées comme lues
+              const entityId = job.cityId || job.tripId;
+              if (entityId) {
+                markNotificationsReadByEntity(job.entityType, entityId);
+              }
             } catch (err) {
               Alert.alert(t('inbox.error'), t('inbox.cannotDelete'));
             }
@@ -540,6 +551,12 @@ export default function InboxPage() {
   // Navigate to review
   const handleJobPress = (job: InboxJob) => {
     if (job.status !== 'done') return;
+
+    // Marquer les notifications liées comme lues
+    const entityId = job.cityId || job.tripId;
+    if (entityId) {
+      markNotificationsReadByEntity(job.entityType, entityId);
+    }
 
     if (job.entityType === 'city' && job.cityId) {
       router.push(`/review/city/${job.cityId}`);

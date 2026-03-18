@@ -19,8 +19,12 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
-        "com.apple.security.application-groups": ["group.com.onedaytravel.mobile.shared"],
-        "com.apple.developer.applesignin": ["Default"]
+        "com.apple.security.application-groups": [
+          "group.com.onedaytravel.mobile.shared"
+        ],
+        "com.apple.developer.applesignin": [
+          "Default"
+        ]
       },
       "usesAppleSignIn": true
     },
@@ -87,8 +91,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "ebc80394-a117-41fc-9804-829716ebe1e8"
+        "projectId": "d326e762-4419-48a8-ba93-53a897b19766"
       }
-    }
+    },
+    "owner": "ldedieu"
   }
 }

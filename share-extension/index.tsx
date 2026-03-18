@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import {ImageBackground, Text, View, StyleSheet, TouchableOpacity} from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import * as Notifications from 'expo-notifications';
 import Loader from '../components/Loader';
 
 const API_BASE: string =
@@ -115,6 +116,20 @@ export default function ShareScreen(props: { url?: string; text?: string }) {
 
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
+      }
+
+      // Envoyer une notification locale pour confirmer
+      try {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Analyse lancée',
+            body: 'Votre vidéo est en cours d\'analyse. Vous serez notifié quand ce sera terminé.',
+            data: { type: 'analysis_started' },
+          },
+          trigger: null, // Notification immédiate
+        });
+      } catch (notifErr) {
+        console.log('[ShareExtension] Notification error:', notifErr);
       }
 
       setPhase('success');
