@@ -4,6 +4,7 @@
  */
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Icon from "react-native-remix-icon";
 
 interface TripBudgetCardProps {
@@ -29,30 +30,31 @@ export function TripBudgetCard({
   activitiesCost,
   moneySavingTips,
 }: TripBudgetCardProps) {
+  const { t } = useTranslation();
   const categories = [
     {
-      label: 'Hébergement',
+      label: t('tripBudget.accommodation'),
       value: accommodationCost,
       icon: 'building-line',
       color: '#3b82f6',
       bgColor: 'rgba(59, 130, 246, 0.15)',
     },
     {
-      label: 'Nourriture',
+      label: t('tripBudget.food'),
       value: foodCost,
       icon: 'restaurant-line',
       color: '#f97316',
       bgColor: 'rgba(249, 115, 22, 0.15)',
     },
     {
-      label: 'Transport',
+      label: t('tripBudget.transport'),
       value: transportCost,
       icon: 'car-line',
       color: '#a855f7',
       bgColor: 'rgba(168, 85, 247, 0.15)',
     },
     {
-      label: 'Activités',
+      label: t('tripBudget.activities'),
       value: activitiesCost,
       icon: 'coupon-2-line',
       color: '#22c55e',
@@ -71,7 +73,7 @@ export function TripBudgetCard({
         <View style={styles.emptyIconContainer}>
           <Icon name="wallet-line" size={28} color="rgba(255, 255, 255, 0.3)" />
         </View>
-        <Text className={'font-dmsans'} style={styles.emptyText}>Aucune information budget disponible.</Text>
+        <Text className={'font-dmsans'} style={styles.emptyText}>{t('tripBudget.noBudgetInfo')}</Text>
       </View>
     );
   }
@@ -86,7 +88,7 @@ export function TripBudgetCard({
               <View style={styles.heroIconContainer}>
                 <Icon name={"wallet-line"} size={20} color="#60a5fa" />
               </View>
-              <Text className={'font-dmsans-bold'} style={styles.heroLabel}>Budget total estimé</Text>
+              <Text className={'font-dmsans-bold'} style={styles.heroLabel}>{t('tripBudget.totalEstimatedBudget')}</Text>
             </View>
             <View style={styles.heroValueRow}>
               <Text style={styles.heroValue}>{totalEstimated}</Text>
@@ -97,8 +99,8 @@ export function TripBudgetCard({
                 <Icon name={"funds-line"} size={14} color="#60a5fa" style={{ transform: [{ scaleY: -1 }] }} />
                 <Text className={'font-dmsans'} style={styles.heroPerDayText}>
                   {perDayMin && perDayMax
-                    ? `${perDayMin} – ${perDayMax} / jour`
-                    : `${perDayMin || perDayMax} / jour`}
+                    ? `${perDayMin} – ${perDayMax} ${t('tripBudget.perDay')}`
+                    : `${perDayMin || perDayMax} ${t('tripBudget.perDay')}`}
                 </Text>
                 {currency && <Text className={'font-dmsans'} style={styles.heroPerDayCurrency}>{currency}</Text>}
               </View>
@@ -110,14 +112,14 @@ export function TripBudgetCard({
       {/* Breakdown - Cards with left accent border */}
       {hasBreakdown && (
         <View style={styles.sectionCard}>
-          <Text className={'font-dmsans-bold'} style={styles.sectionTitle}>Répartition</Text>
+          <Text className={'font-dmsans-bold'} style={styles.sectionTitle}>{t('tripBudget.breakdown')}</Text>
           <View style={styles.categoriesContainer}>
             {categories.map((cat, idx) => {
               return (
                 <View key={idx} style={[styles.categoryRow, idx < categories.length - 1 && styles.categoryRowBorder]}>
                   <View style={styles.categoryLeft}>
                     <View style={[styles.categoryIconContainer, { backgroundColor: cat.bgColor }]}>
-                      <Icon name={cat.icon} size={18} color={cat.color} />
+                      <Icon name={cat.icon as any} size={18} color={cat.color} />
                     </View>
                     <Text className={'font-dmsans'} style={styles.categoryLabel}>{cat.label}</Text>
                   </View>
@@ -139,7 +141,7 @@ export function TripBudgetCard({
             <View style={styles.tipsIconContainer}>
               <Icon name={"lightbulb-line"} size={18} color="#eab308" />
             </View>
-            <Text className={'font-dmsans-bold'} style={styles.tipsTitle}>Conseils pour économiser</Text>
+            <Text className={'font-dmsans-bold'} style={styles.tipsTitle}>{t('tripBudget.moneySavingTips')}</Text>
           </View>
           <View style={styles.tipsList}>
             {moneySavingTips!.map((tip, idx) => (

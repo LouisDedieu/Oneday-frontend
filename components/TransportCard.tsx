@@ -4,6 +4,7 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-remix-icon';
 
 interface TransportLeg {
@@ -20,46 +21,80 @@ interface TransportCardProps {
   legs: TransportLeg[];
 }
 
-const TRANSPORT_CONFIG: Record<string, { icon: string; label: string; color: string }> = {
-  plane: { icon: 'plane-line', label: 'Vol', color: '#60a5fa' },
-  train: { icon: 'train-line', label: 'Train', color: '#34d399' },
-  bus: { icon: 'bus-line', label: 'Bus', color: '#fb923c' },
-  car: { icon: 'car-line', label: 'Voiture', color: '#a855f7' },
-  ferry: { icon: 'boat-line', label: 'Ferry', color: '#06b6d4' },
-  walk: { icon: 'walk-line', label: 'À pied', color: '#22c55e' },
-  taxi: { icon: 'taxi-line', label: 'Taxi', color: '#facc15' },
-  metro: { icon: 'subway-line', label: 'Métro', color: '#ec4899' },
-  bike: { icon: 'bike-line', label: 'Vélo', color: '#84cc16' },
-  boat: { icon: 'ship-line', label: 'Bateau', color: '#06b6d4' },
+const TRANSPORT_KEYS = ['plane', 'train', 'bus', 'car', 'ferry', 'walk', 'taxi', 'metro', 'bike', 'boat'] as const;
+type TransportKey = typeof TRANSPORT_KEYS[number];
+
+const TRANSPORT_COLORS: Record<TransportKey, string> = {
+  plane: '#60a5fa',
+  train: '#34d399',
+  bus: '#fb923c',
+  car: '#a855f7',
+  ferry: '#06b6d4',
+  walk: '#22c55e',
+  taxi: '#facc15',
+  metro: '#ec4899',
+  bike: '#84cc16',
+  boat: '#06b6d4',
+};
+
+const TRANSPORT_ICONS: Record<TransportKey, string> = {
+  plane: 'plane-line',
+  train: 'train-line',
+  bus: 'bus-line',
+  car: 'car-line',
+  ferry: 'boat-line',
+  walk: 'walk-line',
+  taxi: 'taxi-line',
+  metro: 'subway-line',
+  bike: 'bike-line',
+  boat: 'ship-line',
 };
 
 export function TransportCard({ legs }: TransportCardProps) {
+  const { t } = useTranslation();
+
+  const getTransportLabel = (mode: string | null): string => {
+    const key = mode?.toLowerCase() as TransportKey;
+    if (TRANSPORT_KEYS.includes(key)) {
+      return t(`transport.${key}`);
+    }
+    return mode || t('transport.transport');
+  };
+
+  const getTransportConfig = (mode: string | null) => {
+    const key = mode?.toLowerCase() as TransportKey;
+    return {
+      icon: TRANSPORT_ICONS[key] || 'bus-line',
+      label: getTransportLabel(mode),
+      color: TRANSPORT_COLORS[key] || '#60a5fa',
+    };
+  };
+
   if (legs.length === 0) {
     return (
       <View style={styles.emptyContainer}>
         <View style={styles.emptyIconContainer}>
           <Icon name="caravan-line" size={28} color="rgba(255, 255, 255, 0.3)" />
         </View>
-        <Text style={styles.emptyText}>Aucune information de transport disponible.</Text>
+        <Text style={styles.emptyText}>{t('transport.noTransportInfo')}</Text>
       </View>
     );
   }
 
+  const tripCount = legs.length;
+  const plural = tripCount > 1 ? 's' : '';
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>
-        {legs.length} trajet{legs.length > 1 ? 's' : ''} planifié{legs.length > 1 ? 's' : ''}
+        {t('transport.tripPlanned', { count: tripCount, plural })}
       </Text>
 
       <View>
         {legs.map((leg, i) => {
-          const from = leg.from_location || 'Départ';
-          const to = leg.to_location || 'Arrivée';
-          const cfg = TRANSPORT_CONFIG[leg.transport_mode ?? ''] ?? { 
-            icon: 'bus-line', 
-            label: leg.transport_mode ?? 'Transport',
-            color: '#60a5fa'
-          };
+          const from = leg.from_location || t('transport.departure');
+          const to = leg.to_location || t('transport.arrival');
+          const cfg = getTransportConfig(leg.transport_mode);
           
           return (
             <View key={leg.id} style={styles.legContainer}>

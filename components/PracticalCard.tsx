@@ -4,6 +4,7 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-remix-icon';
 
 const getCurrencyIcon = (currency: string | null | undefined): string | null => {
@@ -92,6 +93,7 @@ interface PracticalCardProps {
 }
 
 export function PracticalCard({ info }: PracticalCardProps) {
+  const { t } = useTranslation();
   const hasEssential = info.visa_required !== undefined || info.local_currency || info.language;
   const hasApps = info.best_apps && info.best_apps.length > 0;
   const hasToPack = info.what_to_pack && info.what_to_pack.length > 0;
@@ -107,23 +109,23 @@ export function PracticalCard({ info }: PracticalCardProps) {
             <View style={[styles.iconContainer, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
               <Icon name="shield-check-line" size={16} color="#60a5fa" />
             </View>
-            <Text style={styles.cardTitle}>Informations essentielles</Text>
+            <Text style={styles.cardTitle}>{t('practicalInfo.essentialInfo')}</Text>
           </View>
           <View style={styles.cardContent}>
             {info.visa_required !== undefined && (
               <View style={styles.row}>
-                <Text style={styles.rowLabel}>Visa</Text>
+                <Text style={styles.rowLabel}>{t('practicalInfo.visa')}</Text>
                 <View style={[styles.rowValue, info.visa_required && styles.rowValueWarning]}>
                   <Icon name={"error-warning-fill"} size={14} color={info.visa_required ? '#fb923c' : '#34d399'} />
                   <Text style={[styles.rowValueText, info.visa_required && styles.rowValueTextWarning]}>
-                    {info.visa_required ? 'Requis' : 'Non requis'}
+                    {info.visa_required ? t('practicalInfo.required') : t('practicalInfo.notRequired')}
                   </Text>
                 </View>
               </View>
             )}
             {info.local_currency && (
               <View style={styles.row}>
-                <Text style={styles.rowLabel}>Devise</Text>
+                <Text style={styles.rowLabel}>{t('practicalInfo.currency')}</Text>
                 <View style={styles.currencyValue}>
                   {getCurrencyIcon(info.local_currency) !== null && (
                     <Icon 
@@ -138,7 +140,7 @@ export function PracticalCard({ info }: PracticalCardProps) {
             )}
             {info.language && (
               <View style={styles.row}>
-                <Text style={styles.rowLabel}>Langue</Text>
+                <Text style={styles.rowLabel}>{t('practicalInfo.language')}</Text>
                 <View style={styles.rowValue}>
                   <Icon name={"global-fill"} size={14} color="#c084fc" />
                   <Text style={styles.rowValueText}>{info.language}</Text>
@@ -156,7 +158,7 @@ export function PracticalCard({ info }: PracticalCardProps) {
             <View style={[styles.iconContainer, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
               <Icon name="smartphone-line" size={16} color="#60a5fa" />
             </View>
-            <Text style={styles.cardTitle}>Applications utiles</Text>
+            <Text style={styles.cardTitle}>{t('practicalInfo.usefulApps')}</Text>
           </View>
           <View style={styles.tagsContainer}>
             {info.best_apps!.map((app, idx) => (
@@ -176,7 +178,7 @@ export function PracticalCard({ info }: PracticalCardProps) {
             <View style={[styles.iconContainer, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
               <Icon name="suitcase-line" size={16} color="#a855f7" />
             </View>
-            <Text style={styles.cardTitle}>À emporter</Text>
+            <Text style={styles.cardTitle}>{t('practicalInfo.toBring')}</Text>
           </View>
           <View style={styles.tagsContainer}>
             {info.what_to_pack!.map((item, idx) => (
@@ -195,7 +197,7 @@ export function PracticalCard({ info }: PracticalCardProps) {
             <View style={[styles.iconContainer, { backgroundColor: 'rgba(234, 179, 8, 0.15)' }]}>
               <Icon name="lightbulb-line" size={16} color="#eab308" />
             </View>
-            <Text style={styles.cardTitle}>Conseils de sécurité</Text>
+            <Text style={styles.cardTitle}>{t('practicalInfo.safetyTips')}</Text>
           </View>
           <View style={styles.listContainer}>
             {info.safety_tips!.map((tip, idx) => (
@@ -215,7 +217,7 @@ export function PracticalCard({ info }: PracticalCardProps) {
             <View style={[styles.iconContainer, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
               <Icon name="alert-line" size={16} color="#ef4444" />
             </View>
-            <Text style={[styles.cardTitle, { color: 'rgba(255, 255, 255, 0.7)' }]}>À éviter</Text>
+            <Text style={[styles.cardTitle, { color: 'rgba(255, 255, 255, 0.7)' }]}>{t('practicalInfo.toAvoid')}</Text>
           </View>
           <View style={styles.listContainer}>
             {info.avoid!.map((item, idx) => (

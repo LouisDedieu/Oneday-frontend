@@ -20,6 +20,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useFocusEffect, useLocalSearchParams, useRouter} from 'expo-router';
+import {useTranslation} from 'react-i18next';
 import {getCity} from '@/services/cityService';
 import {
   createHighlight,
@@ -98,6 +99,7 @@ export default function CityDetailPage() {
   const router = useRouter();
   const { cityId } = useLocalSearchParams<{ cityId: string }>();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   const [city, setCity] = useState<CityData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -243,7 +245,7 @@ export default function CityDetailPage() {
       setAddAddrStatus(null);
       setShowAddModal(false);
     } catch (err: any) {
-      Alert.alert('Erreur', err.message || 'Impossible de créer le point');
+      Alert.alert(t('cityDetail.error'), err.message || t('cityDetail.cannotCreatePoint'));
     } finally {
       setAddingHighlight(false);
     }
@@ -313,7 +315,7 @@ export default function CityDetailPage() {
       setEditAddrCoords(null);
       setEditAddrStatus(null);
     } catch (err: any) {
-      Alert.alert('Erreur', err.message || 'Impossible de modifier le point');
+      Alert.alert(t('cityDetail.error'), err.message || t('cityDetail.cannotEditPoint'));
     } finally {
       setSavingEdit(false);
     }
@@ -322,12 +324,12 @@ export default function CityDetailPage() {
   // Delete highlight
   const handleDeleteHighlight = useCallback(async (highlightId: string) => {
     Alert.alert(
-      'Supprimer',
-      'Êtes-vous sûr de vouloir supprimer ce point ?',
+      t('cityDetail.delete'),
+      t('cityDetail.deleteConfirmMessage'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('cityDetail.cancel'), style: 'cancel' },
         {
-          text: 'Supprimer',
+          text: t('cityDetail.deleteConfirm'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -343,7 +345,7 @@ export default function CityDetailPage() {
                 };
               });
             } catch (err: any) {
-              Alert.alert('Erreur', err.message || 'Impossible de supprimer le point');
+              Alert.alert(t('cityDetail.error'), err.message || t('cityDetail.cannotDeletePoint'));
             }
           },
         },
@@ -362,7 +364,7 @@ export default function CityDetailPage() {
     } else if (highlight.address) {
       Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(highlight.address)}`);
     } else {
-      Alert.alert('Erreur', 'Aucune localisation disponible pour ce point');
+      Alert.alert(t('cityDetail.error'), t('cityDetail.noLocationForPoint'));
     }
   }, []);
 
@@ -474,12 +476,12 @@ export default function CityDetailPage() {
         resizeMode="cover"
       >
         <View className="center-content px-4" style={{ paddingTop: insets.top }}>
-          <Text className="text-zinc-400 text-sm mb-4 font-dmsans">{error || 'Ville introuvable.'}</Text>
+          <Text className="text-zinc-400 text-sm mb-4 font-dmsans">{error || t('cityDetail.cityNotFound')}</Text>
           <TouchableOpacity
             onPress={() => router.back()}
             className="bg-zinc-800 px-6 py-3 rounded-lg"
           >
-            <Text className="text-label">Retour</Text>
+            <Text className="text-label">{t('cityDetail.back')}</Text>
           </TouchableOpacity>
         </View>
       </ImageBackground>
@@ -585,7 +587,7 @@ export default function CityDetailPage() {
                 }}
               >
                 <Text className="font-dmsans" style={{ color: '#fbbf24', fontSize: 10 }}>
-                  ⚠️ {approximateCount} approx.
+                  ⚠️ {approximateCount} {t('cityDetail.approx')}
                 </Text>
               </View>
             )}
@@ -655,9 +657,9 @@ export default function CityDetailPage() {
             variant="secondary"
             size="sm"
             tabs={[
-              { icon: 'star-line', label: 'Highlights' },
-              { icon: 'money-dollar-circle-line', label: 'Budget' },
-              { icon: 'compass-line', label: 'Pratique' },
+              { icon: 'star-line', label: t('cityDetail.highlights') },
+              { icon: 'money-dollar-circle-line', label: t('cityDetail.budget') },
+              { icon: 'compass-line', label: t('cityDetail.practical') },
             ]}
             activeIndex={activeTab === 'highlights' ? 0 : activeTab === 'budget' ? 1 : 2}
             onTabChange={(index) => {
@@ -742,7 +744,7 @@ export default function CityDetailPage() {
                               : 0
                         }
                         tags={highlight.subtype ? [highlight.subtype] : []}
-                        description={highlight.description || 'Pas de description disponible.'}
+                        description={highlight.description || t('cityDetail.noDescription')}
                         tip={highlight.tips}
                         isMustSee={highlight.is_must_see}
                         colorScheme={CATEGORY_TO_COLOR_SCHEME[highlight.category || 'other']}
@@ -794,7 +796,7 @@ export default function CityDetailPage() {
                 {filteredHighlights.length === 0 && (
                   <View className="empty-state">
                     <Icon name={"information-2-fill"} size={32} color="#a1a1aa" style={{ opacity: 1 }} />
-                    <Text className="text-sm text-zinc-400 mt-2 font-dmsans">Aucun point trouvé.</Text>
+                    <Text className="text-sm text-zinc-400 mt-2 font-dmsans">{t('cityDetail.noPointsFound')}</Text>
                   </View>
                 )}
               </View>
@@ -802,7 +804,7 @@ export default function CityDetailPage() {
               {/* Add highlight button */}
               <View style={{ marginTop: 16, marginBottom: 16 }}>
                 <PrimaryButton
-                  title="Ajouter un highlight"
+                  title={t('cityDetail.addHighlight')}
                   leftIcon="add-line"
                   color="purple"
                   size="sm"
@@ -817,12 +819,12 @@ export default function CityDetailPage() {
           {/* Budget Tab */}
           {activeTab === 'budget' && (
             <View className="px-4 pt-4 pb-6">
-              {budget === null ? (
+              {budget ? (
                 <CityBudgetCard budget={budget} />
               ) : (
                 <View className="empty-state">
                   <Icon name={"information-2-fill"} size={32} color="#a1a1aa" style={{ opacity: 1 }} />
-                  <Text className="text-sm text-zinc-400 mt-2 font-dmsans">Aucune information budget disponible.</Text>
+                  <Text className="text-sm text-zinc-400 mt-2 font-dmsans">{t('cityDetail.noBudgetInfo')}</Text>
                 </View>
               )}
             </View>
@@ -836,7 +838,7 @@ export default function CityDetailPage() {
               ) : (
                 <View className="empty-state">
                   <Icon name={"information-2-fill"} size={32} color="#a1a1aa" style={{ opacity: 1 }} />
-                  <Text className="text-sm text-zinc-400 mt-2 font-dmsans">Aucune information pratique disponible.</Text>
+                  <Text className="text-sm text-zinc-400 mt-2 font-dmsans">{t('cityDetail.noPracticalInfo')}</Text>
                 </View>
               )}
             </View>
@@ -848,26 +850,26 @@ export default function CityDetailPage() {
       <HighlightFormModal
         visible={showAddModal}
         onClose={() => setShowAddModal(false)}
-        title="Ajouter un point"
+        title={t('cityDetail.addPoint')}
         form={newHighlight}
         setForm={setNewHighlight}
         addressStatus={addAddrStatus}
         onSubmit={handleAddHighlight}
         submitting={addingHighlight}
-        submitLabel="Ajouter"
+        submitLabel={t('cityDetail.add')}
       />
 
       {/* Edit Highlight Modal */}
       <HighlightFormModal
         visible={showEditModal}
         onClose={() => setShowEditModal(false)}
-        title="Modifier le point"
+        title={t('cityDetail.editPoint')}
         form={editForm}
         setForm={setEditForm}
         addressStatus={editAddrStatus}
         onSubmit={handleSaveEdit}
         submitting={savingEdit}
-        submitLabel="Enregistrer"
+        submitLabel={t('cityDetail.save')}
       />
     </ImageBackground>
   );

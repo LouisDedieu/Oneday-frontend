@@ -4,6 +4,7 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-remix-icon';
 import { CityBudget } from '@/types/api';
 
@@ -12,26 +13,27 @@ interface CityBudgetCardProps {
 }
 
 export function CityBudgetCard({ budget }: CityBudgetCardProps) {
+  const { t } = useTranslation();
   const currency = budget.currency || 'EUR';
   const currencySymbol = currency === 'EUR' ? '€' : currency;
 
   const categories = [
     {
-      label: 'Repas moyen',
+      label: t('cityBudget.foodAverage'),
       value: budget.food_average,
       icon: 'restaurant-line',
       color: '#f97316',
       bgColor: 'rgba(249, 115, 22, 0.15)',
     },
     {
-      label: 'Transport/jour',
+      label: t('cityBudget.transportPerDay'),
       value: budget.transport_average,
       icon: 'bus-line',
       color: '#3b82f6',
       bgColor: 'rgba(59, 130, 246, 0.15)',
     },
     {
-      label: 'Activités',
+      label: t('cityBudget.activities'),
       value: budget.activities_average,
       icon: 'ticket-line',
       color: '#a855f7',
@@ -51,11 +53,11 @@ export function CityBudgetCard({ budget }: CityBudgetCardProps) {
               <View style={styles.heroIconContainer}>
                 <Icon name="money-dollar-circle-line" size={22} color="#4ade80" />
               </View>
-              <Text style={styles.heroLabel}>Budget journalier moyen</Text>
+              <Text style={styles.heroLabel}>{t('cityBudget.dailyBudget')}</Text>
             </View>
             <View style={styles.heroValueRow}>
               <Text style={styles.heroValue}>~{Math.round(budget.daily_average)}</Text>
-              <Text style={styles.heroCurrency}>{currencySymbol}/jour</Text>
+              <Text style={styles.heroCurrency}>{currencySymbol}{t('cityBudget.perDay')}</Text>
             </View>
           </View>
           <View style={styles.heroDecoration} />
@@ -65,7 +67,7 @@ export function CityBudgetCard({ budget }: CityBudgetCardProps) {
       {/* Category breakdown - Cards with left accent border */}
       {hasCategories && (
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Moyennes par catégorie</Text>
+          <Text style={styles.sectionTitle}>{t('cityBudget.averagesByCategory')}</Text>
           <View style={styles.categoriesContainer}>
             {categories.map((cat, idx) => {
               return (
@@ -94,10 +96,10 @@ export function CityBudgetCard({ budget }: CityBudgetCardProps) {
             <View style={[styles.accommodationIconContainer, { backgroundColor: 'rgba(236, 72, 153, 0.15)' }]}>
               <Icon name="home-4-line" size={18} color="#ec4899" />
             </View>
-            <Text style={styles.accommodationTitle}>Hébergement</Text>
+            <Text style={styles.accommodationTitle}>{t('cityBudget.accommodation')}</Text>
           </View>
           <View style={styles.accommodationContent}>
-            <Text style={styles.accommodationLabel}>Fourchette</Text>
+            <Text style={styles.accommodationLabel}>{t('cityBudget.range')}</Text>
             <Text style={styles.accommodationValue}>{budget.accommodation_range}</Text>
           </View>
         </View>

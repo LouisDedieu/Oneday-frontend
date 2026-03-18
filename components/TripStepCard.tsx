@@ -14,6 +14,7 @@ import Animated, {
   interpolate,
   Easing,
 } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-remix-icon';
 import { PrimaryButton } from './PrimaryButton';
 
@@ -189,7 +190,7 @@ function CategoryLegend({ categories }: { categories: CategoryCount[] }) {
   );
 }
 
-function DayRow({ day, maxTotal }: { day: DayData; maxTotal: number }) {
+function DayRow({ day, maxTotal, t }: { day: DayData; maxTotal: number; t: (key: string, options?: Record<string, any>) => string }) {
   return (
     <View
       style={{
@@ -213,7 +214,7 @@ function DayRow({ day, maxTotal }: { day: DayData; maxTotal: number }) {
             minWidth: 20,
           }}
         >
-          J{day.dayNumber}
+          {t('tripStepCard.dayShort', { number: day.dayNumber })}
         </Text>
         <Text
           style={{
@@ -256,11 +257,13 @@ function AnimatedDayRow({
                           maxTotal,
                           index,
                           expandProgress,
+                          t,
                         }: {
   day: DayData;
   maxTotal: number;
   index: number;
   expandProgress: Animated.SharedValue<number>;
+  t: (key: string, options?: Record<string, any>) => string;
 }) {
   const animatedStyle = useAnimatedStyle(() => {
     // Staggered animation based on index
@@ -283,7 +286,7 @@ function AnimatedDayRow({
 
   return (
     <Animated.View style={animatedStyle}>
-      <DayRow day={day} maxTotal={maxTotal} />
+      <DayRow day={day} maxTotal={maxTotal} t={t} />
     </Animated.View>
   );
 }
@@ -303,6 +306,7 @@ export function TripStepCard({
                                onExpand,
                                style,
                              }: TripStepCardProps) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   // Calculate max total spots for bar normalization
@@ -402,7 +406,7 @@ export function TripStepCard({
               marginTop: 2,
             }}
           >
-            {daysCount} jours · {spotsCount} spots
+            {t('tripStepCard.daysSpots', { days: daysCount, spots: spotsCount })}
           </Text>
         </View>
 
@@ -436,6 +440,7 @@ export function TripStepCard({
               maxTotal={maxTotal}
               index={index}
               expandProgress={expandProgress}
+              t={t}
             />
           ))}
 
@@ -443,7 +448,7 @@ export function TripStepCard({
           {onViewDetails && (
             <Animated.View style={buttonAnimatedStyle}>
               <PrimaryButton
-                title="Voir en détails"
+                title={t('tripStepCard.viewDetails')}
                 showArrow
                 color="accent"
                 size="sm"
