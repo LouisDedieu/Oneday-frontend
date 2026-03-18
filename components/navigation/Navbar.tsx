@@ -150,6 +150,7 @@ const SIZE_CONFIG = {
 function PrimaryNavbarItem({
                              icon,
                              label,
+                             badge,
                              active,
                              onPress,
                              onPressIn,
@@ -160,6 +161,7 @@ function PrimaryNavbarItem({
                            }: {
   icon: string;
   label: string;
+  badge?: number;
   active: boolean;
   onPress?: () => void;
   onPressIn?: () => void;
@@ -183,7 +185,36 @@ function PrimaryNavbarItem({
         zIndex: 2,
       }}
     >
-      <Icon name={active ? icon.replace('-line', '-fill') : icon} size={iconSize} color={PRIMARY_COLORS.main} />
+      <View style={{ position: 'relative' }}>
+        <Icon name={active ? icon.replace('-line', '-fill') : icon} size={iconSize} color={PRIMARY_COLORS.main} />
+        {badge !== undefined && badge > 0 && (
+          <View
+            style={{
+              position: 'absolute',
+              top: -4,
+              right: -8,
+              backgroundColor: '#F87171',
+              borderRadius: 8,
+              minWidth: 16,
+              height: 16,
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingHorizontal: 4,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: 'Righteous',
+                fontSize: 9,
+                lineHeight: 12,
+                color: '#FAFAFF',
+              }}
+            >
+              {badge > 99 ? '99+' : badge}
+            </Text>
+          </View>
+        )}
+      </View>
       <Text
         style={{
           fontFamily: 'Righteous',
@@ -308,7 +339,7 @@ function AnimatedIndicator({
   const indicatorWidth =
     variant === 'primary'
       ? SIZE_CONFIG.primary.default.indicatorWidth
-      : containerWidth / tabCount - padding;
+      : containerWidth / tabCount - padding+1;
 
   const tabWidth = containerWidth / tabCount;
 
@@ -348,10 +379,10 @@ function AnimatedIndicator({
       style={[
         {
           position: 'absolute',
-          width: indicatorWidth,
-          height: tabHeight,
+          width: indicatorWidth-4,
+          height: tabHeight-1,
           top: padding,
-          left: 0,
+          left: 2,
           backgroundColor: bgColor,
           borderRadius: 30,
           zIndex: 1,
@@ -568,6 +599,7 @@ export function Navbar({
                 key={index}
                 icon={tab.icon}
                 label={tab.label}
+                badge={tab.badge}
                 active={index === activeIndex}
                 onPress={() => {
                   tab.onPress?.();

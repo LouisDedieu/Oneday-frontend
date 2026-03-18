@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, type StyleProp, type ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { Pill } from './Pill';
 import { TripDayChip, type CategoryType } from './TripDayChip';
 
@@ -68,6 +69,7 @@ const CITY_PILL_TEXT = '#201A63';
 // ---------------------------------------------------------------------------
 
 export function ContentCard(props: ContentCardProps) {
+  const { t } = useTranslation();
   const { variant, title, style } = props;
 
   const isTrip = variant === 'trip';
@@ -77,13 +79,13 @@ export function ContentCard(props: ContentCardProps) {
   let subtitle = '';
   if (isTrip) {
     const parts: string[] = [];
-    if (props.daysCount) parts.push(`${props.daysCount} jours`);
-    if (props.spotsCount) parts.push(`${props.spotsCount} spots`);
+    if (props.daysCount) parts.push(`${props.daysCount} ${t('contentCard.days')}`);
+    if (props.spotsCount) parts.push(`${props.spotsCount} ${t('contentCard.spots')}`);
     if (props.season) parts.push(props.season);
     subtitle = parts.join(' · ');
   } else {
     const parts: string[] = [];
-    if (props.highlightsCount) parts.push(`${props.highlightsCount} highlights`);
+    if (props.highlightsCount) parts.push(`${props.highlightsCount} ${t('contentCard.highlights')}`);
     if (props.country) parts.push(`${props.country}${props.countryFlag ? ` ${props.countryFlag}` : ''}`);
     subtitle = parts.join(' · ');
   }
@@ -93,7 +95,7 @@ export function ContentCard(props: ContentCardProps) {
   const hasChips = chips.length > 0;
 
   // Pill configuration
-  const pillLabel = isTrip ? 'Trip' : 'City';
+  const pillLabel = isTrip ? t('contentCard.trip') : t('contentCard.city');
   const pillBg = isTrip ? TRIP_PILL_BG : CITY_PILL_BG;
   const pillText = isTrip ? TRIP_PILL_TEXT : CITY_PILL_TEXT;
 

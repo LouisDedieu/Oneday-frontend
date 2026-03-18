@@ -16,6 +16,7 @@ import React from 'react';
 import EventSource, { type EventSourceEvent } from 'react-native-sse';
 import { AnalysisResponse, AnalysisError, EntityType } from '../types/api';
 import { supabase } from '../lib/supabase';
+import i18n from '../src/i18n/index';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -39,11 +40,11 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export const JOB_STATUS_LABELS: Record<string, string> = {
-  pending:     'En attente…',
-  downloading: 'Téléchargement de la vidéo…',
-  analyzing:   'Analyse en cours (peut prendre plusieurs minutes)…',
-  done:        'Analyse terminée',
-  error:       'Erreur',
+  pending:     i18n.t('jobs.pending'),
+  downloading: i18n.t('jobs.downloading'),
+  analyzing:   i18n.t('jobs.analyzing'),
+  done:        i18n.t('jobs.done'),
+  error:       i18n.t('jobs.error'),
 };
 
 export type JobStatus = 'pending' | 'downloading' | 'analyzing' | 'done' | 'error';

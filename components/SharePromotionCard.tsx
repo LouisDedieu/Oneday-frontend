@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, type StyleProp, type ViewStyle } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Svg, { Path } from 'react-native-svg';
 import OneDayLogo from '@/assets/svg/Oneday.svg';
 import TikTokLogo from '@/assets/svg/tiktok logo.svg';
@@ -108,6 +109,8 @@ function OneDayIcon({ size = 14.3 }: { size?: number }) {
 // ---------------------------------------------------------------------------
 
 export function SharePromotionCard({ style }: SharePromotionCardProps) {
+  const { t } = useTranslation();
+
   return (
     <View
       style={[
@@ -135,7 +138,7 @@ export function SharePromotionCard({ style }: SharePromotionCardProps) {
           color: COLORS.textPrimary,
         }}
       >
-        Encore plus rapide ⚡
+        {t('sharePromotion.title')}
       </Text>
 
       {/* Subtitle */}
@@ -148,7 +151,7 @@ export function SharePromotionCard({ style }: SharePromotionCardProps) {
           color: COLORS.textSecondary,
         }}
       >
-        Partage directement depuis TikTok ou Instagram
+        {t('sharePromotion.subtitle')}
       </Text>
 
       {/* Workflow Bar */}
@@ -182,7 +185,7 @@ export function SharePromotionCard({ style }: SharePromotionCardProps) {
               color: COLORS.textTertiary,
             }}
           >
-            Partager
+            {t('sharePromotion.share')}
           </Text>
         </View>
 
@@ -218,7 +221,6 @@ export function SharePromotionCard({ style }: SharePromotionCardProps) {
             paddingVertical: 2,
             backgroundColor: COLORS.badgeBackground,
             borderRadius: 16,
-            // Inner shadow effect
             shadowColor: '#5C55AA',
             shadowOffset: { width: 0, height: 1 },
             shadowOpacity: 0.5,
@@ -233,7 +235,7 @@ export function SharePromotionCard({ style }: SharePromotionCardProps) {
               color: COLORS.badgeText,
             }}
           >
-            Analyse auto ✓
+            {t('sharePromotion.autoAnalysis')}
           </Text>
         </View>
       </View>

@@ -7,6 +7,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-remix-icon';
 import { useAuth } from '@/context/AuthContext';
 import Loader from '@/components/Loader';
@@ -14,26 +15,28 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 
 // ── Loading Screen ─────────────────────────────────────────────────────────────
 export function LoadingScreen() {
+  const { t } = useTranslation();
   return (
     <View className="center-content">
       <Loader size={48} />
-      <Text className="text-white/50 mt-3 text-sm">Connexion en cours…</Text>
+      <Text className="text-white/50 mt-3 text-sm">{t('authGuard.loginConnection')}</Text>
     </View>
   );
 }
 
 // ── Network Error Screen ───────────────────────────────────────────────────────
 export function NetworkErrorScreen({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation();
   return (
     <View className="center-content px-6">
       <View className="w-14 h-14 rounded-full items-center justify-center mb-4 bg-red-500/15 border border-red-500/30">
         <Icon name="wifi-off-line" size={24} color="#f87171" />
       </View>
-      <Text className="text-white font-semibold mb-2 text-center">Connexion impossible</Text>
+      <Text className="text-white font-semibold mb-2 text-center">{t('authGuard.connectionImpossible')}</Text>
       <Text className="text-white/50 text-sm text-center leading-5 mb-6">
-        Impossible de joindre les serveurs.{'\n'}Vérifiez votre connexion internet.
+        {t('authGuard.cannotReachServers')}
       </Text>
-      <PrimaryButton title="Réessayer" onPress={onRetry} leftIcon="refresh-line" />
+      <PrimaryButton title={t('common.retry')} onPress={onRetry} leftIcon="refresh-line" />
     </View>
   );
 }
@@ -41,20 +44,21 @@ export function NetworkErrorScreen({ onRetry }: { onRetry: () => void }) {
 // ── Email Pending Screen ───────────────────────────────────────────────────────
 export function EmailPendingScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   
   return (
     <View className="center-content px-6">
       <View className="w-14 h-14 rounded-full items-center justify-center mb-4 bg-blue-500/15 border border-blue-500/30">
         <Icon name="mail-check-line" size={24} color="#60a5fa" />
       </View>
-      <Text className="text-white font-semibold mb-2 text-center">Confirmez votre email</Text>
+      <Text className="text-white font-semibold mb-2 text-center">{t('authGuard.confirmYourEmail')}</Text>
       <Text className="text-white/50 text-sm text-center leading-5 mb-6">
-        Un email de confirmation vous a été envoyé.{'\n'}Cliquez sur le lien pour activer votre compte.
+        {t('authGuard.confirmationEmailSentGuard')}
       </Text>
       <TouchableOpacity onPress={() => router.replace('/login')} activeOpacity={0.7}>
-        <Text className="text-white/50 text-sm">Retour à la connexion</Text>
+        <Text className="text-white/50 text-sm">{t('auth.backToLogin')}</Text>
       </TouchableOpacity>
-      <PrimaryButton title="Retour à la connexion" onPress={() => router.replace('/login')} leftIcon="arrow-left-line" className="mt-4" />
+      <PrimaryButton title={t('auth.backToLogin')} onPress={() => router.replace('/login')} leftIcon="arrow-left-line" className="mt-4" />
     </View>
   );
 }

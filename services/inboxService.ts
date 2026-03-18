@@ -6,10 +6,14 @@
  * - Suppression de jobs
  * - Lancement d'analyses
  * - Helpers et types associés
+ * 
+ * Note: Les labels traduits sont exposés via des clés de traduction.
+ * Les composants doivent utiliser useTranslation() pour les afficher.
  */
 
 import { apiFetch, apiPost, apiDelete } from '@/lib/api';
 import { JobCardStatus } from '@/components/JobCard';
+import i18n from '@/src/i18n/index';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -80,13 +84,13 @@ export function isValidUrl(url: string): boolean {
 export function formatRelativeTime(dateString: string): string {
   const diff = Date.now() - new Date(dateString).getTime();
   const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return 'Now';
-  if (mins < 60) return `${mins} min`;
+  if (mins < 1) return i18n.t('jobs.now');
+  if (mins < 60) return i18n.t('jobs.minAgo', { count: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h`;
+  if (hrs < 24) return i18n.t('jobs.hourAgo', { count: hrs });
   const days = Math.floor(hrs / 24);
-  if (days === 1) return 'Hier';
-  return `${days}j`;
+  if (days === 1) return i18n.t('jobs.yesterday');
+  return i18n.t('jobs.daysAgo', { count: days });
 }
 
 export function isJobInProgress(status: JobStatus): boolean {
@@ -103,45 +107,45 @@ export function mapJobToCardProps(job: InboxJob): JobCardDisplayProps {
   if (job.status === 'error') {
     return {
       status: 'error',
-      pillLabel: 'Erreur',
+      pillLabel: i18n.t('jobs.error'),
       pillBackgroundColor: CARD_COLORS.pillError,
       pillTextColor: CARD_COLORS.pillTextError,
       cardBackgroundColor: CARD_COLORS.cardError,
       iconLabel: '',
       iconLabelBackgroundColor: '',
-      subtitle: job.errorMessage || 'Une erreur est survenue',
+      subtitle: job.errorMessage || i18n.t('jobs.anErrorOccurred'),
     };
   }
 
   // Loading states
   if (isJobInProgress(job.status)) {
-    const statusLabels: Record<string, string> = {
-      pending: 'En attente...',
-      downloading: 'Téléchargement...',
-      analyzing: 'Analyse en cours...',
+    const statusKeys: Record<string, string> = {
+      pending: 'jobs.pending',
+      downloading: 'jobs.downloading',
+      analyzing: 'jobs.analyzing',
     };
     return {
       status: 'loading',
-      pillLabel: statusLabels[job.status],
+      pillLabel: i18n.t(statusKeys[job.status]),
       pillBackgroundColor: CARD_COLORS.pillLoading,
       pillTextColor: CARD_COLORS.pillTextLoading,
       cardBackgroundColor: CARD_COLORS.cardLoading,
-      iconLabel: isCity ? 'Ville' : 'Trip',
+      iconLabel: isCity ? i18n.t('jobs.city') : i18n.t('jobs.trip'),
       iconLabelBackgroundColor: CARD_COLORS.iconLoading,
-      subtitle: job.progressPct > 0 ? `${job.progressPct}%` : 'Traitement en cours...',
+      subtitle: job.progressPct > 0 ? `${job.progressPct}%` : i18n.t('jobs.processing'),
     };
   }
 
   // Done - City
   if (isCity) {
-    const highlightsText = job.highlightsCount ? `${job.highlightsCount} Lieux` : '';
+    const highlightsText = job.highlightsCount ? `${job.highlightsCount} ${i18n.t('jobs.places')}` : '';
     return {
       status: 'done',
-      pillLabel: 'Terminé ✓',
+      pillLabel: i18n.t('jobs.done'),
       pillBackgroundColor: CARD_COLORS.pillDone,
       pillTextColor: CARD_COLORS.pillTextDone,
       cardBackgroundColor: CARD_COLORS.cardDone,
-      iconLabel: 'Ville',
+      iconLabel: i18n.t('jobs.city'),
       iconLabelBackgroundColor: CARD_COLORS.iconCity,
       subtitle: [highlightsText, relativeTime].filter(Boolean).join(' · '),
     };
@@ -150,11 +154,11 @@ export function mapJobToCardProps(job: InboxJob): JobCardDisplayProps {
   // Done - Trip
   return {
     status: 'trip',
-    pillLabel: 'Terminé ✓',
+    pillLabel: i18n.t('jobs.done'),
     pillBackgroundColor: CARD_COLORS.pillDone,
     pillTextColor: CARD_COLORS.pillTextDone,
     cardBackgroundColor: CARD_COLORS.cardTrip,
-    iconLabel: 'Trip',
+    iconLabel: i18n.t('jobs.trip'),
     iconLabelBackgroundColor: CARD_COLORS.iconTrip,
     subtitle: relativeTime,
   };

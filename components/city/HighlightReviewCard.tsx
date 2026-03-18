@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-remix-icon';
 import { Highlight, HighlightCategory, HIGHLIGHT_CATEGORIES } from '@/types/api';
 import type { HighlightUpdatePayload } from '@/services/cityReviewService';
@@ -26,6 +27,17 @@ const PRICE_COLORS: Record<string, string> = {
   '€€€€': '#ef4444',
 };
 
+const getPriceLabel = (price: string, t: (key: string) => string): string => {
+  switch (price) {
+    case 'gratuit': return t('spotReview.free');
+    case '€': return t('spotReview.budget');
+    case '€€': return t('spotReview.moderate');
+    case '€€€': return t('spotReview.expensive');
+    case '€€€€': return t('spotReview.luxury');
+    default: return price;
+  }
+};
+
 const CATEGORY_ICONS: Record<HighlightCategory, string> = {
   food: 'restaurant-line',
   culture: 'landscape-line',
@@ -33,6 +45,18 @@ const CATEGORY_ICONS: Record<HighlightCategory, string> = {
   shopping: 'shopping-bag-3-line',
   nightlife: 'moon-clear-line',
   other: 'map-pin-line',
+};
+
+const getCategoryLabel = (cat: HighlightCategory, t: (key: string) => string): string => {
+  switch (cat) {
+    case 'food': return t('spotReview.restaurant');
+    case 'culture': return t('spotReview.attraction');
+    case 'nature': return t('spotReview.activity');
+    case 'shopping': return t('spotReview.shopping');
+    case 'nightlife': return t('spotReview.bar');
+    case 'other': return t('spotReview.other');
+    default: return cat;
+  }
 };
 
 const CATEGORY_TO_COLOR_SCHEME: Record<HighlightCategory, 'default' | 'restaurant' | 'culture' | 'nature' | 'shopping' | 'nightlife' | 'location' | 'mustsee'> = {
@@ -61,6 +85,7 @@ export function HighlightReviewCard({
   isDragging,
   drag,
 }: HighlightReviewCardProps) {
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -161,7 +186,7 @@ export function HighlightReviewCard({
                   {highlight.is_must_see && included && (
                     <View className="flex-row items-center gap-1 bg-yellow-500/20 pill-small">
                       <Icon name="star-fill" size={10} color="#facc15" />
-                      <Text className="text-yellow-400 text-xs">Must-see</Text>
+                      <Text className="text-yellow-400 text-xs">{t('highlightReview.mustSee')}</Text>
                     </View>
                   )}
                 </View>
@@ -207,7 +232,7 @@ export function HighlightReviewCard({
               <View className="flex-row items-center gap-1 flex-shrink-0">
                 {/* Include/Exclude toggle */}
                 <SecondaryButton
-                  title={included ? 'Inclus' : 'Exclu'}
+                  title={included ? t('highlightReview.included') : t('highlightReview.excluded')}
                   active={included}
                   variant="pill"
                   size="sm"
@@ -231,7 +256,7 @@ export function HighlightReviewCard({
                 {confirmDel ? (
                   <View className="flex-row items-center gap-1">
                     <PrimaryButton
-                      title="Suppr"
+                      title={t('highlightReview.delete')}
                       size="sm"
                       color="purple"
                       onPress={onDelete}
@@ -270,7 +295,7 @@ export function HighlightReviewCard({
       {/* Name */}
       <View>
         <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          Nom
+          {t('highlightReview.name')}
         </Text>
         <TextInput
           value={form.name ?? ''}
@@ -284,7 +309,7 @@ export function HighlightReviewCard({
       {/* Category */}
       <View>
         <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          Categorie
+          {t('highlightReview.category')}
         </Text>
         <ScrollView
           horizontal
@@ -298,7 +323,7 @@ export function HighlightReviewCard({
             return (
               <SecondaryButton
                 key={cat}
-                title={HIGHLIGHT_CATEGORIES[cat].label}
+                title={getCategoryLabel(cat, t)}
                 active={isSelected}
                 variant="pill"
                 size="sm"
@@ -314,12 +339,12 @@ export function HighlightReviewCard({
       {/* Subtype */}
       <View>
         <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          Sous-type
+          {t('highlightReview.subtype')}
         </Text>
         <TextInput
           value={form.subtype ?? ''}
           onChangeText={(v) => setForm((f) => ({ ...f, subtype: v || undefined }))}
-          placeholder="Ex: Restaurant italien, Musee d'art..."
+          placeholder={t('highlightReview.subtypePlaceholder')}
           placeholderTextColor="rgba(255,255,255,0.3)"
           className="mt-1 rounded-lg px-3 py-2 text-sm text-white"
           style={{ backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
@@ -329,7 +354,7 @@ export function HighlightReviewCard({
       {/* Price */}
       <View>
         <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          Prix
+          {t('highlightReview.price')}
         </Text>
         <ScrollView
           horizontal
@@ -342,7 +367,7 @@ export function HighlightReviewCard({
             return (
               <SecondaryButton
                 key={p}
-                title={p}
+                title={getPriceLabel(p, t)}
                 active={isSelected}
                 variant="pill"
                 size="sm"
@@ -356,12 +381,12 @@ export function HighlightReviewCard({
       {/* Address */}
       <View>
         <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          Adresse
+          {t('spotReview.address')}
         </Text>
         <TextInput
           value={form.address ?? ''}
           onChangeText={(v) => setForm((f) => ({ ...f, address: v || undefined }))}
-          placeholder="Optionnel"
+          placeholder={t('highlightReview.optional')}
           placeholderTextColor="rgba(255,255,255,0.3)"
           className="mt-1 rounded-lg px-3 py-2 text-sm text-white"
           style={{ backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
@@ -371,12 +396,12 @@ export function HighlightReviewCard({
       {/* Description */}
       <View>
         <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          Description
+          {t('highlightReview.description')}
         </Text>
         <TextInput
           value={form.description ?? ''}
           onChangeText={(v) => setForm((f) => ({ ...f, description: v || undefined }))}
-          placeholder="Optionnel"
+          placeholder={t('highlightReview.optional')}
           placeholderTextColor="rgba(255,255,255,0.3)"
           multiline
           numberOfLines={2}
@@ -394,12 +419,12 @@ export function HighlightReviewCard({
       {/* Tips */}
       <View>
         <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          Conseil
+          {t('highlightReview.tips')}
         </Text>
         <TextInput
           value={form.tips ?? ''}
           onChangeText={(v) => setForm((f) => ({ ...f, tips: v || undefined }))}
-          placeholder="Optionnel"
+          placeholder={t('highlightReview.optional')}
           placeholderTextColor="rgba(255,255,255,0.3)"
           multiline
           numberOfLines={2}
@@ -416,7 +441,7 @@ export function HighlightReviewCard({
 
       {/* Must-see toggle */}
       <SecondaryButton
-        title="Incontournable"
+        title={t('highlightReview.mustSeeLabel')}
         active={form.is_must_see}
         variant="pill"
         size="sm"
@@ -428,7 +453,7 @@ export function HighlightReviewCard({
       {/* Actions */}
       <View className="flex-row justify-around gap-2 pt-2 w-full">
         <PrimaryButton
-          title="Enregistrer"
+          title={t('highlightReview.save')}
           leftIcon="save-line"
           onPress={handleSave}
           loading={saving}
@@ -437,7 +462,7 @@ export function HighlightReviewCard({
           style={{flexGrow: 0.7}}
         />
         <SecondaryButton
-          title="Annuler"
+          title={t('highlightReview.cancel')}
           variant="square"
           onPress={() => setIsEditing(false)}
           style={{ flex: 1 }}

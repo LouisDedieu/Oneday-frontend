@@ -15,6 +15,8 @@ import { useRouter } from 'expo-router';
 import Icon from 'react-native-remix-icon';
 import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/lib/api';
+import { useTranslation } from 'react-i18next';
+import { LanguagePicker } from '@/components/ui/LanguagePicker';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -98,6 +100,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -150,13 +153,17 @@ export default function ProfilePage() {
     );
   }
 
-  const displayName = profile?.full_name ?? profile?.username ?? user?.email ?? 'Utilisateur';
+  const displayName = profile?.full_name ?? profile?.username ?? user?.email ?? t('auth.signIn');
   const isTestMode = false;
+
+  const formatDate = (iso: string) => {
+    return new Date(iso).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  };
 
   return (
     <ScrollView
       style={{ flex: 1 }}
-      contentContainerStyle={{ paddingTop: insets.top + 16 }}
+      contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 100, flexGrow: 1 }}
     >
       <View style={{ maxWidth: 400, marginHorizontal: 'auto', width: '100%', paddingHorizontal: 16, gap: 16 }}>
 
@@ -220,7 +227,7 @@ export default function ProfilePage() {
                     }}
                   >
                     <Icon name="check-line" size={10} color="#34d399" />
-                    <Text className="font-dmsans" style={{ color: '#34d399', fontSize: 10, fontWeight: '500' }}>Vérifié</Text>
+                    <Text className="font-dmsans" style={{ color: '#34d399', fontSize: 10, fontWeight: '500' }}>{t('profile.verified')}</Text>
                   </View>
                 ) : (
                   <View
@@ -234,7 +241,7 @@ export default function ProfilePage() {
                     }}
                   >
                     <Text className="font-dmsans" style={{ color: '#fbbf24', fontSize: 10, fontWeight: '500' }}>
-                      En attente de confirmation
+                      {t('profile.pendingConfirmation')}
                     </Text>
                   </View>
                 )}
@@ -251,7 +258,7 @@ export default function ProfilePage() {
                       paddingVertical: 2,
                     }}
                   >
-                    <Text className="font-dmsans" style={{ color: '#a855f7', fontSize: 10, fontWeight: '500' }}>Test</Text>
+                    <Text className="font-dmsans" style={{ color: '#a855f7', fontSize: 10, fontWeight: '500' }}>{t('profile.test')}</Text>
                   </View>
                 )}
               </View>
@@ -280,7 +287,7 @@ export default function ProfilePage() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 }}>
                   <Icon name="time-line" size={12} color="rgba(255, 255, 255, 0.4)" />
                   <Text className="font-dmsans" style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.4)' }}>
-                    Membre depuis {formatDate(profile.created_at)}
+                    {t('profile.memberSince', { date: formatDate(profile.created_at) })}
                   </Text>
                 </View>
               )}
@@ -297,7 +304,7 @@ export default function ProfilePage() {
                 <StatCard
                   icon="map-pin-line"
                   value={stats.tripsCreated}
-                  label="Voyages créés"
+                  label={t('profile.tripsCreated')}
                   bgColor="rgba(59, 130, 246, 0.2)"
                   borderColor="rgba(59, 130, 246, 0.3)"
                 />
@@ -306,7 +313,7 @@ export default function ProfilePage() {
                 <StatCard
                   icon="bookmark-line"
                   value={stats.tripsSaved}
-                  label="Voyages sauvegardés"
+                  label={t('profile.tripsSaved')}
                   bgColor="rgba(168, 85, 247, 0.2)"
                   borderColor="rgba(168, 85, 247, 0.3)"
                 />
@@ -319,7 +326,7 @@ export default function ProfilePage() {
                 <StatCard
                   icon="eye-line"
                   value={stats.totalViews}
-                  label="Vues reçues"
+                  label={t('profile.viewsReceived')}
                   bgColor="rgba(34, 197, 94, 0.2)"
                   borderColor="rgba(34, 197, 94, 0.3)"
                 />
@@ -328,7 +335,7 @@ export default function ProfilePage() {
                 <StatCard
                   icon="movie-line"
                   value={stats.videosAnalyzed}
-                  label="Vidéos analysées"
+                  label={t('profile.videosAnalyzed')}
                   bgColor="rgba(251, 146, 60, 0.2)"
                   borderColor="rgba(251, 146, 60, 0.3)"
                 />
@@ -336,6 +343,9 @@ export default function ProfilePage() {
             </View>
           </View>
         )}
+
+        {/* ── Language Picker ── */}
+        <LanguagePicker />
 
         {/* ── Raccourcis ── */}
         <View
@@ -363,7 +373,7 @@ export default function ProfilePage() {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <Icon name="bookmark-line" size={16} color="rgba(255, 255, 255, 0.5)" />
-              <Text className="font-dmsans" style={{ fontSize: 14, color: '#FAFAFF' }}>Mes voyages sauvegardés</Text>
+              <Text className="font-dmsans" style={{ fontSize: 14, color: '#FAFAFF' }}>{t('profile.mySavedTrips')}</Text>
             </View>
             <Icon name="arrow-right-s-line" size={16} color="rgba(255, 255, 255, 0.3)" />
           </TouchableOpacity>
@@ -382,7 +392,7 @@ export default function ProfilePage() {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <Icon name="movie-line" size={16} color="rgba(255, 255, 255, 0.5)" />
-              <Text className="font-dmsans" style={{ fontSize: 14, color: '#FAFAFF' }}>Analyser une nouvelle vidéo</Text>
+              <Text className="font-dmsans" style={{ fontSize: 14, color: '#FAFAFF' }}>{t('profile.analyzeNewVideo')}</Text>
             </View>
             <Icon name="arrow-right-s-line" size={16} color="rgba(255, 255, 255, 0.3)" />
           </TouchableOpacity>
@@ -400,7 +410,7 @@ export default function ProfilePage() {
               justifyContent: 'center',
               gap: 8,
               borderWidth: 1,
-              borderColor: 'rgba(255, 255, 255, 0.1)',
+              borderColor: 'rgb(166,60,60)',
               borderRadius: 12,
               paddingVertical: 14,
               opacity: signing || isTestMode ? 0.4 : 1,
@@ -410,19 +420,19 @@ export default function ProfilePage() {
             {signing ? (
               <>
                 <Loader size={20} color="rgba(255, 255, 255, 0.5)" />
-                <Text className="font-dmsans" style={{ color: 'rgba(255, 255, 255, 0.5)', fontWeight: '500' }}>Déconnexion…</Text>
+                <Text className="font-dmsans" style={{ color: 'rgb(166,60,60)', fontWeight: '500' }}>{t('profile.signingOut')}</Text>
               </>
             ) : (
               <>
-                <Icon name="logout-box-line" size={16} color="rgba(255, 255, 255, 0.5)" />
-                <Text className="font-dmsans" style={{ color: 'rgba(255, 255, 255, 0.5)', fontWeight: '500' }}>Se déconnecter</Text>
+                <Icon name="logout-box-line" size={16} color="rgb(255,82,82)" />
+                <Text className="font-dmsans" style={{ color: 'rgb(255,82,82)', fontWeight: '500' }}>{t('profile.signOut')}</Text>
               </>
             )}
           </TouchableOpacity>
 
           {isTestMode && (
             <Text className="font-dmsans" style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.4)', textAlign: 'center', marginTop: 8 }}>
-              Déconnexion désactivée en mode test
+              {t('authGuard.logoutDisabled')}
             </Text>
           )}
         </View>

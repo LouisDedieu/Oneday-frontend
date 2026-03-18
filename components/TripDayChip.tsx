@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, type StyleProp, type ViewStyle } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,42 +37,52 @@ interface MoreDaysChipProps {
 export type TripDayChipProps = CategoryChipProps | DayChipProps | MoreDaysChipProps;
 
 // ---------------------------------------------------------------------------
+// Category Labels (translated)
+// ---------------------------------------------------------------------------
+
+const getCategoryLabel = (category: CategoryType, t: (key: string) => string): string => {
+  switch (category) {
+    case 'food': return t('tripDayChip.food');
+    case 'culture': return t('tripDayChip.culture');
+    case 'nightlife': return t('tripDayChip.nightlife');
+    case 'shopping': return t('tripDayChip.shopping');
+    case 'nature': return t('tripDayChip.nature');
+    case 'other': return t('tripDayChip.other');
+    default: return category;
+  }
+};
+
+// ---------------------------------------------------------------------------
 // Category Configuration
 // ---------------------------------------------------------------------------
 
 const CATEGORY_CONFIG = {
   food: {
-    label: 'Food',
     emoji: '🍽️',
     overlayColor: 'rgba(255, 88, 5, 0.2)',
     textColor: '#C1755E',
   },
   culture: {
-    label: 'Culture',
     emoji: '🏛️',
     overlayColor: 'rgba(113, 5, 255, 0.2)',
     textColor: '#A35EC1',
   },
   nightlife: {
-    label: 'Nightlife',
     emoji: '🍸',
     overlayColor: 'rgba(5, 76, 255, 0.2)',
     textColor: '#5E87C1',
   },
   shopping: {
-    label: 'Shopping',
     emoji: '🛍️',
     overlayColor: 'rgba(255, 5, 238, 0.2)',
     textColor: '#BE5EC1',
   },
   nature: {
-    label: 'Nature',
     emoji: '🌿',
     overlayColor: 'rgba(5, 255, 88, 0.2)',
     textColor: '#5EC17A',
   },
   other: {
-    label: 'Other',
     emoji: '📍',
     overlayColor: 'rgba(150, 150, 150, 0.2)',
     textColor: '#8C92B5',
@@ -91,6 +102,7 @@ const LABEL_COLOR = 'rgba(255, 255, 255, 0.6)';
 // ---------------------------------------------------------------------------
 
 export function TripDayChip(props: TripDayChipProps) {
+  const { t } = useTranslation();
   const { variant, style } = props;
 
   // ── More Days Variant ─────────────────────────────────────────────────────
@@ -114,7 +126,7 @@ export function TripDayChip(props: TripDayChipProps) {
               color: LABEL_COLOR,
             }}
           >
-            + {props.daysCount} jours
+            + {props.daysCount} {t('tripDayChip.days')}
           </Text>
         </View>
       </View>
@@ -152,7 +164,7 @@ export function TripDayChip(props: TripDayChipProps) {
               marginLeft: 2,
             }}
           >
-            {config.label}
+            {getCategoryLabel(props.category, t)}
           </Text>
           {/* Count badge */}
           <View
@@ -207,7 +219,7 @@ export function TripDayChip(props: TripDayChipProps) {
               color: LABEL_COLOR,
             }}
           >
-            Jour {props.dayNumber}
+            {t('tripDayChip.day', { number: props.dayNumber })}
           </Text>
           {/* Count badge */}
           <View

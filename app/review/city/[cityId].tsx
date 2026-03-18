@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-remix-icon';
 import DraggableFlatList, {
   ScaleDecorator,
@@ -50,6 +51,7 @@ export default function CityReviewPage() {
   const router = useRouter();
   const { cityId } = useLocalSearchParams<{ cityId: string }>();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   const [city, setCity] = useState<DbCity | null>(null);
@@ -284,7 +286,7 @@ export default function CityReviewPage() {
     console.log('[Merge] Validated IDs to send:', validatedIds);
 
     if (validatedIds.length === 0) {
-      Alert.alert('Aucun point', 'Selectionnez au moins un point a fusionner.');
+      Alert.alert(t('cityReview.noPointToMerge'));
       return;
     }
 
@@ -293,8 +295,8 @@ export default function CityReviewPage() {
       const result = await mergeCities(existingMatch.city_id, cityId, validatedIds, true);
       console.log('[Merge] Result:', result);
       Alert.alert(
-        'Fusion terminee',
-        `${result.highlights_merged} point${result.highlights_merged > 1 ? 's' : ''} ajouté${result.highlights_merged > 1 ? 's' : ''} a ${existingMatch.city_name}.`,
+        t('cityReview.mergeCompleteTitle'),
+        t('cityReview.pointsAdded', { count: result.highlights_merged, plural: result.highlights_merged > 1 ? 's' : '', city: existingMatch.city_name }),
         [
           {
             text: 'OK',
@@ -303,11 +305,11 @@ export default function CityReviewPage() {
         ]
       );
     } catch (err: any) {
-      Alert.alert('Erreur', err.message);
+      Alert.alert(t('cityReview.error'), err.message);
     } finally {
       setMerging(false);
     }
-  }, [existingMatch, cityId, city, router]);
+  }, [existingMatch, cityId, city, router, t]);
 
   // Add new highlight
   const handleAddHighlight = useCallback(async () => {
@@ -332,11 +334,11 @@ export default function CityReviewPage() {
       setNewHighlight({ name: '', category: 'other', address: '' });
       setShowAddModal(false);
     } catch (err: any) {
-      Alert.alert('Erreur', err.message || 'Impossible de créer le point');
+      Alert.alert(t('cityReview.error'), err.message || t('cityReview.error'));
     } finally {
       setAddingHighlight(false);
     }
-  }, [cityId, newHighlight]);
+  }, [cityId, newHighlight, t]);
 
   // Save/unsave
   const handleValidate = async () => {
@@ -350,11 +352,10 @@ export default function CityReviewPage() {
         await syncCityData(city.id);
         await saveCity(user.id, city.id);
         setIsSaved(true);
-        // Replace to trips list to avoid stacking review page in history
         router.replace('/(tabs)/trips');
       }
     } catch (err: any) {
-      Alert.alert('Erreur', err.message);
+      Alert.alert(t('cityReview.error'), err.message);
     } finally {
       setValidating(false);
     }
@@ -393,8 +394,8 @@ export default function CityReviewPage() {
   if (!city) {
     return (
       <View className="center-content gap-4">
-        <Text className="text-body-muted">Ville introuvable</Text>
-        <Button onPress={() => router.navigate('/(tabs)')}>Retour</Button>
+        <Text className="text-body-muted">{t('review.cityNotFound')}</Text>
+        <Button onPress={() => router.navigate('/(tabs)')}>{t('review.back')}</Button>
       </View>
     );
   }
@@ -435,7 +436,7 @@ export default function CityReviewPage() {
               <View className="flex-row items-center gap-1 mt-0.5">
                 <Icon name={'map-pin-2-line'} size={12} color="#a855f7" />
                 <Text className="text-sm text-body-muted">
-                  {city.city_name}, {city.country} · {totalHighlights} points
+                  {city.city_name}, {city.country} · {totalHighlights} {t('cityReview.points')}
                 </Text>
               </View>
             </View>
@@ -466,14 +467,14 @@ export default function CityReviewPage() {
                     <Icon name={'merge-cells-horizontal'} size={18} color="#a855f7" />
                     <View className="flex-1">
                       <Text className="text-sm text-purple-300 font-dmsans-medium">
-                        {existingMatch.city_name} existe deja
+                        {existingMatch.city_name} {t('cityReview.alreadyExists')}
                       </Text>
                       <Text className="text-xs text-purple-400 mt-0.5 font-dmsans">
-                        {existingMatch.highlights_count} existants · Ajouter {validatedCount} point{validatedCount > 1 ? 's' : ''}
+                        {existingMatch.highlights_count} {t('cityReview.existing')} · {t('cityReview.addPoints', { count: validatedCount, plural: validatedCount > 1 ? 's' : '' })}
                       </Text>
                     </View>
                     <PrimaryButton
-                      title={merging ? '' : 'Fusionner'}
+                      title={merging ? '' : t('cityReview.merge')}
                       leftIcon={merging ? undefined : 'share-forward-line'}
                       onPress={handleMerge}
                       loading={merging}
@@ -501,11 +502,11 @@ export default function CityReviewPage() {
                     <Text className="text-sm font-medium text-white font-righteous">
                       {validatedCount}/{totalHighlights}
                     </Text>
-                    <Text className="label-micro">points</Text>
+                    <Text className="label-micro">{t('cityReview.points')}</Text>
                   </View>
                   <View className="flex-row gap-1.5">
-                    {(['Tout', 'Aucun'] as const).map((label) => {
-                      const isAll = label === 'Tout';
+                    {([t('cityReview.allPoints'), t('cityReview.noPoints')] as const).map((label) => {
+                      const isAll = label === t('cityReview.allPoints');
                       const disabled = isAll
                         ? validatedCount === totalHighlights
                         : validatedCount === 0;
@@ -559,7 +560,7 @@ export default function CityReviewPage() {
               {/* Add highlight button */}
               <View className="mx-4 mt-3 my-2">
                 <SecondaryButton
-                  title="Ajouter un point"
+                  title={t('cityReview.addPoint')}
                   leftIcon="add-line"
                   onPress={() => setShowAddModal(true)}
                   variant={'square'}
@@ -570,7 +571,7 @@ export default function CityReviewPage() {
           }
           ListEmptyComponent={
             <View className="items-center justify-center py-12">
-              <Text className="text-white/50 font-dmsans">Aucun point dans cette categorie</Text>
+              <Text className="text-white/50 font-dmsans">{t('cityReview.noPointInCategory')}</Text>
             </View>
           }
         />
@@ -582,7 +583,7 @@ export default function CityReviewPage() {
         >
           {isSaved ? (
             <PrimaryButton
-              title="Retirer de ma collection"
+              title={t('cityReview.removeFromCollection')}
               leftIcon="delete-bin-line"
               onPress={handleValidate}
               loading={validating}
@@ -591,7 +592,7 @@ export default function CityReviewPage() {
             />
           ) : validatedCount === 0 ? (
             <PrimaryButton
-              title="Sélectionne au moins un point"
+              title={t('cityReview.selectAtLeastOnePoint')}
               leftIcon="information-line"
               onPress={() => {}}
               disabled
@@ -599,7 +600,7 @@ export default function CityReviewPage() {
             />
           ) : (
             <PrimaryButton
-              title={`Sauvegarder ${validatedCount} point${validatedCount > 1 ? 's' : ''}`}
+              title={t('cityReview.savePoint', { count: validatedCount, plural: validatedCount > 1 ? 's' : '' })}
               leftIcon="check-line"
               onPress={handleValidate}
               loading={validating}
@@ -622,7 +623,7 @@ export default function CityReviewPage() {
             >
               {/* Header */}
               <View className="flex-row items-center justify-between mb-4">
-                <Text className="title-lg-bold">Ajouter un point</Text>
+                <Text className="title-lg-bold">{t('cityReview.addPoint')}</Text>
                 <TouchableOpacity onPress={() => setShowAddModal(false)} className="p-2">
                   <Icon name={'close-line'} size={20} color="rgba(255,255,255,0.5)" />
                 </TouchableOpacity>
@@ -632,11 +633,11 @@ export default function CityReviewPage() {
               <View className="gap-4">
                 {/* Name */}
                 <View>
-                  <Text className="text-xs text-white/50 uppercase mb-1 font-dmsans">Nom *</Text>
+                  <Text className="text-xs text-white/50 uppercase mb-1 font-dmsans">{t('cityReview.nameRequired')}</Text>
                   <TextInput
                     value={newHighlight.name}
                     onChangeText={(v) => setNewHighlight((f) => ({ ...f, name: v }))}
-                    placeholder="Ex: Tour Eiffel, Cafe de Flore..."
+                    placeholder={t('cityReview.namePlaceholder')}
                     placeholderTextColor="rgba(255,255,255,0.3)"
                     className="rounded-lg px-3 py-3 text-white"
                     style={{ backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
@@ -645,7 +646,7 @@ export default function CityReviewPage() {
 
                 {/* Category */}
                 <View>
-                  <Text className="text-xs text-white/50 uppercase mb-1 font-dmsans">Catégorie</Text>
+                  <Text className="text-xs text-white/50 uppercase mb-1 font-dmsans">{t('cityReview.category')}</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     <View className="flex-row gap-2">
                       {(Object.keys(HIGHLIGHT_CATEGORIES) as HighlightCategory[]).map((cat) => {
@@ -667,11 +668,11 @@ export default function CityReviewPage() {
 
                 {/* Address */}
                 <View>
-                  <Text className="text-xs text-white/50 uppercase mb-1 font-dmsans">Adresse</Text>
+                  <Text className="text-xs text-white/50 uppercase mb-1 font-dmsans">{t('cityReview.address')}</Text>
                   <TextInput
                     value={newHighlight.address ?? ''}
                     onChangeText={(v) => setNewHighlight((f) => ({ ...f, address: v }))}
-                    placeholder="Optionnel"
+                    placeholder={t('cityReview.addressOptional')}
                     placeholderTextColor="rgba(255,255,255,0.3)"
                     className="rounded-lg px-3 py-3 text-white"
                     style={{ backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
@@ -680,7 +681,7 @@ export default function CityReviewPage() {
 
                 {/* Submit */}
                 <PrimaryButton
-                  title="Ajouter"
+                  title={t('cityReview.add')}
                   leftIcon={addingHighlight ? undefined : 'add-line'}
                   onPress={handleAddHighlight}
                   loading={addingHighlight}

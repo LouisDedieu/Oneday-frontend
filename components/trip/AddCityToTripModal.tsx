@@ -15,6 +15,7 @@ import {
   TouchableWithoutFeedback, Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-remix-icon';
 import { useAuth } from '@/context/AuthContext';
 import { getUserSavedCities } from '@/services/cityService';
@@ -68,6 +69,7 @@ export function AddCityToTripModal({
                                    }: AddCityToTripModalProps) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const [cities, setCities] = useState<SavedCityItem[]>([]);
   const [loadingCities, setLoadingCities] = useState(true);
@@ -183,11 +185,11 @@ export function AddCityToTripModal({
       if (!res.ok) throw new Error('Geocoding error');
       const data: NominatimResult[] = await res.json();
       if (data.length === 0) {
-        setGeoError('Aucun résultat. Essayez un nom différent.');
+        setGeoError(t('addCityToTrip.noResults'));
       }
       setGeoResults(data);
     } catch {
-      setGeoError('Impossible de rechercher. Vérifiez votre connexion.');
+      setGeoError(t('addCityToTrip.geoError'));
     } finally {
       setGeoLoading(false);
     }
@@ -215,13 +217,13 @@ export function AddCityToTripModal({
         create_new_day: createNewDay,
       });
       Alert.alert(
-        'Ajouté !',
-        `${result.spots_count} point${result.spots_count > 1 ? 's' : ''} ajouté${result.spots_count > 1 ? 's' : ''} à ${result.city_name}`,
-        [{ text: 'OK', onPress: handleClose }]
+        t('addCityToTrip.added'),
+        t('addCityToTrip.pointsAdded', { count: result.spots_count, plural: result.spots_count > 1 ? 's' : '', city: result.city_name }),
+        [{ text: t('common.ok'), onPress: handleClose }]
       );
       onCityAdded();
     } catch (err: any) {
-      Alert.alert('Erreur', err.message || "Impossible d'ajouter la ville");
+      Alert.alert(t('addCityToTrip.error'), err.message || t('addCityToTrip.cannotAddCity'));
     } finally {
       setAdding(false);
     }
@@ -239,13 +241,13 @@ export function AddCityToTripModal({
       await addDestinationToTrip(tripId, { city_name: cityName, country, latitude, longitude });
 
       Alert.alert(
-        'Ajouté !',
-        `${cityName} a été ajouté à votre itinéraire avec un jour vide.`,
-        [{ text: 'OK', onPress: handleClose }]
+        t('addCityToTrip.added'),
+        t('addCityToTrip.addedToItinerary', { city: cityName }),
+        [{ text: t('common.ok'), onPress: handleClose }]
       );
       onCityAdded();
     } catch (err: any) {
-      Alert.alert('Erreur', err.message || "Impossible d'ajouter la ville");
+      Alert.alert(t('addCityToTrip.error'), err.message || t('addCityToTrip.cannotAddCity'));
     } finally {
       setAdding(false);
     }
@@ -254,7 +256,7 @@ export function AddCityToTripModal({
   const renderChooseMode = () => (
     <View className="p-4 gap-3">
       <Text className="text-white/60 font-dmsans text-sm mb-2">
-        Comment souhaitez-vous ajouter une ville ?
+        {t('addCityToTrip.howToAdd')}
       </Text>
 
       <TouchableOpacity
@@ -269,9 +271,9 @@ export function AddCityToTripModal({
           <Icon name="book-marked-line" size={22} color="#a855f7" />
         </View>
         <View className="flex-1">
-          <Text className="title-righteous">Importer une ville sauvegardée</Text>
+          <Text className="title-righteous">{t('addCityToTrip.importSavedCity')}</Text>
           <Text className="text-white/50 font-dmsans-medium text-xs mt-0.5">
-            Depuis vos City Guides existants
+            {t('addCityToTrip.fromExistingGuides')}
           </Text>
         </View>
         <Icon name="arrow-right-s-line" size={18} color="rgba(255,255,255,0.5)" />
@@ -289,9 +291,9 @@ export function AddCityToTripModal({
           <Icon name="pencil-line" size={22} color="#3b82f6" />
         </View>
         <View className="flex-1">
-          <Text className="title-righteous">Ajouter une nouvelle ville</Text>
+          <Text className="title-righteous">{t('addCityToTrip.addNewCity')}</Text>
           <Text className="text-white/50 font-dmsans-medium text-xs mt-0.5">
-            Saisir un nom et localiser sur la carte
+            {t('addCityToTrip.enterNameAndLocate')}
           </Text>
         </View>
         <Icon name="arrow-right-s-line" size={18} color="rgba(255,255,255,0.5)" />
@@ -304,7 +306,7 @@ export function AddCityToTripModal({
       <View className="px-4 py-3">
         <Input
           leftIcon="search-line"
-          placeholder="Rechercher une ville..."
+          placeholder={t('addCityToTrip.searchCity')}
           variant={'dark'}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -319,7 +321,7 @@ export function AddCityToTripModal({
         <View className="flex-1 items-center justify-center py-12 px-4" style={{ marginBottom: insets.bottom}}>
           <Icon name="building-4-line" size={48} color="rgba(255,255,255,0.3)" />
           <Text className="text-white/50 font-dmsans-semibold text-center mt-4">
-            {searchQuery ? 'Aucune ville trouvée' : 'Aucune ville sauvegardée'}
+            {searchQuery ? t('addCityToTrip.noCityFound') : t('addCityToTrip.noCitySaved')}
           </Text>
         </View>
       ) : (
@@ -353,14 +355,14 @@ export function AddCityToTripModal({
                       {city.city_name}, {city.country}
                     </Text>
                     <Text className="text-white/30 font-dmsans text-xs">•</Text>
-                    <Text className="text-white/50 font-dmsans text-xs">{highlightsCount} points</Text>
+                    <Text className="text-white/50 font-dmsans text-xs">{highlightsCount} {t('addCityToTrip.points')}</Text>
                   </View>
                   {alreadyInTrip && (
-                    <Text className="text-purple-400 font-dmsans-medium text-xs mt-1">Déjà dans cet itinéraire</Text>
+                    <Text className="text-purple-400 font-dmsans-medium text-xs mt-1">{t('addCityToTrip.alreadyInItinerary')}</Text>
                   )}
                 </View>
                 <PrimaryButton
-                  title="Ajouter"
+                  title={t('addCityToTrip.add')}
                   onPress={() => handleSelectCity(city)}
                   disabled={adding || alreadyInTrip || !city.id}
                   size={"sm"}
@@ -381,10 +383,10 @@ export function AddCityToTripModal({
     return (
       <View className="flex-1 p-4">
         <Text className="text-white text-lg font-bold mb-2">
-          {selectedCity.city_name} existe déjà
+          {selectedCity.city_name} {t('addCityToTrip.alreadyExists')}
         </Text>
         <Text className="text-white/60 text-sm mb-4">
-          Ajouter les points à un jour existant ou créer un nouveau jour ?
+          {t('addCityToTrip.addToExistingOrNew')}
         </Text>
 
         {existingDays.map((day) => (
@@ -406,9 +408,9 @@ export function AddCityToTripModal({
               )}
             </View>
             <View className="flex-1">
-              <Text className="text-white font-medium">Jour {day.day_number}</Text>
+              <Text className="text-white font-medium">{t('addCityToTrip.jour', { number: day.day_number })}</Text>
               <Text className="text-white/50 text-xs">
-                {day.theme || day.location} • {day.spots.length} spots
+                {day.theme || day.location} • {day.spots.length} {t('addCityToTrip.spots')}
               </Text>
             </View>
           </TouchableOpacity>
@@ -427,9 +429,9 @@ export function AddCityToTripModal({
             <Icon name="add-line" size={20} color="#a855f7" />
           </View>
           <View className="flex-1">
-            <Text className="text-purple-400 font-medium">Créer un nouveau jour</Text>
+            <Text className="text-purple-400 font-medium">{t('addCityToTrip.createNewDay')}</Text>
             <Text className="text-purple-500 text-xs">
-              Jour {tripDays.length + 1} - {selectedCity.city_name}
+              {t('addCityToTrip.jour', { number: tripDays.length + 1 })} - {selectedCity.city_name}
             </Text>
           </View>
           {adding && <Loader size={18} color="#a855f7" />}
@@ -439,7 +441,7 @@ export function AddCityToTripModal({
           onPress={() => { setSelectedCity(null); setStep('select-city'); }}
           className="mt-4 py-3 items-center"
         >
-          <Text className="text-white/60">Retour</Text>
+          <Text className="text-white/60">{t('addCityToTrip.back')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -450,7 +452,7 @@ export function AddCityToTripModal({
       <View className="px-4 py-3">
         <Input
           leftIcon="search-line"
-          placeholder="Ex: Kyoto, Tokyo, Lisbonne..."
+          placeholder={t('addCityToTrip.enterCityName')}
           variant={'dark'}
           value={manualQuery}
           onChangeText={setManualQuery}
@@ -473,8 +475,8 @@ export function AddCityToTripModal({
           <Icon name="map-pin-line" size={48} color="rgba(255,255,255,0.3)" />
           <Text className="text-white/50 text-center mt-4">
             {manualQuery.trim()
-              ? 'Aucun résultat. Essayez un nom différent.'
-              : 'Saisissez un nom de ville pour rechercher'}
+              ? t('addCityToTrip.noGeoResults')
+              : t('addCityToTrip.enterCityName')}
           </Text>
         </View>
       ) : (
@@ -508,7 +510,7 @@ export function AddCityToTripModal({
                   </View>
                 </View>
                 <PrimaryButton
-                  title="Ajouter"
+                  title={t('addCityToTrip.addNew')}
                   onPress={() => handleAddManualCity(item)}
                   disabled={adding}
                   size={"sm"}
@@ -524,10 +526,10 @@ export function AddCityToTripModal({
   );
 
   const stepTitle: Record<Step, string> = {
-    'choose-mode': 'Ajouter une ville',
-    'select-city': 'Mes City Guides',
-    'select-day': 'Choisir un jour',
-    'manual-city': 'Nouvelle ville',
+    'choose-mode': t('addCityToTrip.addCity'),
+    'select-city': t('addCityToTrip.selectCity'),
+    'select-day': t('addCityToTrip.chooseDay'),
+    'manual-city': t('addCityToTrip.newCity'),
   };
 
   const backStep: Partial<Record<Step, Step>> = {

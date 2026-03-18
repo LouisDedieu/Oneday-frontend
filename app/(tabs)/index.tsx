@@ -23,6 +23,7 @@ import {
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-remix-icon';
+import { useTranslation } from 'react-i18next';
 
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Input } from '@/components/Input';
@@ -55,6 +56,7 @@ interface EmptyStateProps {
 
 function EmptyState({ onAnalysisStarted, isSubmitting }: EmptyStateProps) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const [videoUrl, setVideoUrl] = useState('');
 
   const handleAnalyze = () => {
@@ -84,9 +86,9 @@ function EmptyState({ onAnalysisStarted, isSubmitting }: EmptyStateProps) {
         {/* Title */}
         <View className="mb-4">
           <Text className="font-righteous text-hero text-text-primary">
-            Transformez une
+            {t('inbox.transformVideo')}
           </Text>
-          <View className="flex-row flex-wrap">
+          <View className="flex-row">
             <Text
               className="font-righteous text-hero text-accent"
               style={{
@@ -95,23 +97,23 @@ function EmptyState({ onAnalysisStarted, isSubmitting }: EmptyStateProps) {
                 textShadowRadius: 4,
               }}
             >
-              vidéo
+              {`${t('inbox.video')}`}
             </Text>
             <Text className="font-righteous text-hero text-text-primary">
-              {' '}en itinéraire.
+              {` ${t('inbox.intoItinerary')}`}
             </Text>
           </View>
         </View>
 
         {/* Subtitle */}
         <Text className="font-dmsans-medium text-body text-text-secondary mb-10">
-          Collez un lien TikTok ou Instagram, l'itinéraire complet sera extrait en quelques secondes.
+          {t('inbox.linkSubtitle')}
         </Text>
 
         {/* Input */}
         <Input
           leftIcon="link"
-          placeholder="Coller votre lien ici..."
+          placeholder={t('inbox.pasteLinkHere')}
           variant="dark"
           value={videoUrl}
           onChangeText={setVideoUrl}
@@ -124,7 +126,7 @@ function EmptyState({ onAnalysisStarted, isSubmitting }: EmptyStateProps) {
 
         {/* Primary Button */}
         <PrimaryButton
-          title="Analyser la vidéo"
+          title={t('inbox.analyzeVideo')}
           showArrow
           fullWidth
           onPress={handleAnalyze}
@@ -140,14 +142,14 @@ function EmptyState({ onAnalysisStarted, isSubmitting }: EmptyStateProps) {
         <View className="flex-row items-center justify-center gap-6">
           <TouchableOpacity className="row-center" activeOpacity={0.7}>
             <Icon name="tiktok-fill" color={colors.social} size={17} />
-            <Text className="font-dmsans-medium text-micro text-social">TikTok</Text>
+            <Text className="font-dmsans-medium text-micro text-social">{t('inbox.tiktok')}</Text>
           </TouchableOpacity>
 
           <View className="w-px h-4.5 bg-divider" />
 
           <TouchableOpacity className="row-center" activeOpacity={0.7}>
             <Icon name="instagram-line" color={colors.social} size={17} />
-            <Text className="font-dmsans-medium text-micro text-social">Instagram Reels</Text>
+            <Text className="font-dmsans-medium text-micro text-social">{t('inbox.instagramReels')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -258,6 +260,7 @@ function JobsList({
                     isRefreshing,
                   }: JobsListProps) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const [videoUrl, setVideoUrl] = useState('');
 
   const handleAnalyze = () => {
@@ -273,7 +276,7 @@ function JobsList({
       {/* Main Title */}
       <View className="flex-row flex-wrap mb-4">
         <Text className="section-title">
-          Transformez une{' '}
+          {t('inbox.transformVideo')}
         </Text>
         <Text
           className="section-title-accent"
@@ -283,10 +286,10 @@ function JobsList({
             textShadowRadius: 4,
           }}
         >
-          vidéo
+          {` ${t('inbox.video')}`}
         </Text>
         <Text className="section-title">
-          {' '}en itinéraire.
+          {` ${t('inbox.intoItinerary')}`}
         </Text>
       </View>
 
@@ -294,7 +297,7 @@ function JobsList({
       <View className="flex-row items-center gap-3 mb-5">
         <Input
           leftIcon="link"
-          placeholder="Coller un nouveau lien..."
+          placeholder={t('inbox.newLink')}
           variant="dark"
           value={videoUrl}
           onChangeText={setVideoUrl}
@@ -319,7 +322,7 @@ function JobsList({
       {/* Section Title */}
       <View className="flex-row gap-2">
         <Text className="section-title">
-          Toutes tes
+          {t('inbox.allYour')}
         </Text>
         <Text
           className="section-title-accent"
@@ -329,7 +332,7 @@ function JobsList({
             textShadowRadius: 4,
           }}
         >
-          analyses.
+          {`${t('inbox.analyses')}`}
         </Text>
       </View>
     </View>
@@ -337,7 +340,7 @@ function JobsList({
 
   const renderFooter = () => (
     <Text className="font-dmsans text-tiny text-text-subtle text-center mt-3 pb-5">
-      Les analyses terminées disparaissent une fois le voyage validé
+      {t('inbox.completedAnalysesDisappear')}
     </Text>
   );
 
@@ -385,6 +388,7 @@ function JobsList({
 
 function ErrorState({ error, onRetry }: { error: string; onRetry: () => void }) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   return (
     <ImageBackground
@@ -400,13 +404,13 @@ function ErrorState({ error, onRetry }: { error: string; onRetry: () => void }) 
           <Icon name="error-warning-line" size={32} color={colors.error} />
         </View>
         <Text className="font-dmsans-medium text-body text-text-primary text-center mb-2">
-          Oups !
+          {t('inbox.whoops')}
         </Text>
         <Text className="font-dmsans text-small text-text-muted text-center mb-6">
           {error}
         </Text>
         <PrimaryButton
-          title="Réessayer"
+          title={t('common.retry')}
           leftIcon="refresh-line"
           onPress={onRetry}
         />
@@ -420,6 +424,7 @@ function ErrorState({ error, onRetry }: { error: string; onRetry: () => void }) 
 export default function InboxPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const { registerHandler, unregisterHandler } = useAnalysis();
   const [jobs, setJobs] = useState<InboxJob[]>([]);
   const [loading, setLoading] = useState(true);
@@ -443,12 +448,12 @@ export default function InboxPage() {
       setJobs((prev) => mergeWithOptimisticJobs(prev, fetched));
     } catch (err: any) {
       console.error('Failed to load jobs:', err);
-      setError('Impossible de charger vos analyses.');
+      setError(t('inbox.unableToLoad'));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user?.id]);
+  }, [user?.id, t]);
 
   // Load on mount
   useEffect(() => {
@@ -485,23 +490,23 @@ export default function InboxPage() {
       await loadJobs(false);
 
       Alert.alert(
-        'Analyse lancée',
-        "Votre vidéo est en cours d'analyse. Vous serez notifié quand ce sera terminé.",
-        [{ text: 'OK' }]
+        t('inbox.analysisStarted'),
+        t('inbox.videoBeingAnalyzed'),
+        [{ text: t('common.ok') }]
       );
     } catch (err: any) {
       console.error('Failed to start analysis:', err);
       setJobs((prev) => prev.filter((j) => j.jobId !== optimisticJob.jobId));
 
       Alert.alert(
-        'Erreur',
-        err.message || "Impossible de lancer l'analyse. Veuillez réessayer.",
-        [{ text: 'OK' }]
+        t('inbox.error'),
+        err.message || t('inbox.cannotStartAnalysis'),
+        [{ text: t('common.ok') }]
       );
     } finally {
       setIsSubmitting(false);
     }
-  }, [user?.id, loadJobs]);
+  }, [user?.id, loadJobs, t]);
 
   // Register / unregister handler so the TabBar can trigger analysis from anywhere
   useEffect(() => {
@@ -512,19 +517,19 @@ export default function InboxPage() {
   // Delete job
   const handleDeleteJob = (job: InboxJob) => {
     Alert.alert(
-      'Supprimer cette analyse ?',
-      `Toutes les données associées à "${job.title}" seront supprimées définitivement.`,
+      t('inbox.deleteAnalysis'),
+      t('inbox.allDataAssociatedWillBeDeleted', { title: job.title }),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Supprimer',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               await deleteInboxJob(job.jobId);
               setJobs((prev) => prev.filter((j) => j.jobId !== job.jobId));
             } catch (err) {
-              Alert.alert('Erreur', 'Impossible de supprimer cette analyse.');
+              Alert.alert(t('inbox.error'), t('inbox.cannotDelete'));
             }
           },
         },

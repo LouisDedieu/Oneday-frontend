@@ -36,9 +36,19 @@
     },
     "plugins": [
       "expo-router",
+      "expo-localization",
       "expo-apple-authentication",
       "expo-font",
       "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#5248D4",
+          "sounds": [],
+          "defaultChannel": "default"
+        }
+      ],
       [
         "expo-share-extension",
         {
@@ -74,8 +84,7 @@
       "router": {},
       "eas": {
         "projectId": "ebc80394-a117-41fc-9804-829716ebe1e8"
-      },
-      "POSTHOG_API_KEY": "EXPO_PUBLIC_POSTHOG_API_KEY"
+      }
     }
   }
 }

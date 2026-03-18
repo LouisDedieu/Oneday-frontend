@@ -17,6 +17,7 @@ import {
   Easing,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Navbar } from '@/components/navigation/Navbar';
 import Loader from '@/components/Loader';
 import { ContentCard } from '@/components/ContentCard';
@@ -37,6 +38,7 @@ type FilterType = 'trip' | 'city';
 
 export default function SavedPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
 
@@ -141,14 +143,14 @@ export default function SavedPage() {
 
   // Delete handler
   const handleDelete = async (item: SavedItem) => {
-    const alertTitle = item.entity_type === 'city' ? 'Supprimer la ville ?' : 'Supprimer le voyage ?';
+    const alertTitle = item.entity_type === 'city' ? t('trips.deleteCity') : t('trips.deleteTrip');
     Alert.alert(
       alertTitle,
       `Toutes les données associées à "${item.title}" seront supprimées définitivement.`,
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Supprimer',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -160,7 +162,7 @@ export default function SavedPage() {
                 setTripItems((prev) => prev.filter((i) => i.id !== item.id));
               }
             } catch (err) {
-              Alert.alert('Erreur', 'Impossible de supprimer.');
+              Alert.alert(t('trips.error'), t('trips.cannotDelete'));
             }
           },
         },
@@ -225,7 +227,7 @@ export default function SavedPage() {
           className="center-content"
           style={{ paddingTop: insets.top }}
         >
-          <Text className="text-text-secondary font-dmsans">Connectez-vous pour voir vos sauvegardes.</Text>
+          <Text className="text-text-secondary font-dmsans">{t('trips.signInToView')}</Text>
         </View>
       </ImageBackground>
     );
@@ -247,7 +249,7 @@ export default function SavedPage() {
         {/* Title */}
         <View className="flex-row mb-4">
           <Text className="section-title">
-            Ta{' '}
+            {t('trips.your')}{' '}
           </Text>
           <Text
             className="section-title-accent"
@@ -257,7 +259,7 @@ export default function SavedPage() {
               textShadowRadius: 4,
             }}
           >
-            collection.
+            {`${t('trips.collection')}`}
           </Text>
         </View>
 
@@ -355,6 +357,7 @@ export default function SavedPage() {
 // -- Empty State --------------------------------------------------------------
 
 function EmptyState({ filter }: { filter: FilterType }) {
+  const { t } = useTranslation();
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(20)).current;
 
@@ -377,10 +380,10 @@ function EmptyState({ filter }: { filter: FilterType }) {
 
   const isCity = filter === 'city';
   const icon = isCity ? 'building-line' : 'signpost-line';
-  const title = isCity ? 'Aucun guide de ville' : 'Aucun voyage';
+  const title = isCity ? t('trips.noCities') : t('trips.noTrips');
   const subtitle = isCity
-    ? "Analysez des videos de type 'city guide' pour decouvrir des villes."
-    : "Analysez des videos de voyage pour creer des itineraires.";
+    ? t('trips.analyzeCityVideos')
+    : t('trips.analyzeVideosToCreate');
 
   return (
     <Animated.View

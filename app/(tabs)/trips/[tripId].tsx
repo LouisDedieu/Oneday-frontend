@@ -12,6 +12,7 @@ import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import DraggableFlatList, {RenderItemParams, ScaleDecorator,} from 'react-native-draggable-flatlist';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useFocusEffect, useLocalSearchParams, useRouter} from 'expo-router';
+import {useTranslation} from 'react-i18next';
 import {InteractiveHeroMap} from '@/components/trip/InteractiveHeroMap';
 import {getTrip} from '@/services/tripService';
 import {getUserSavedCities} from '@/services/cityService';
@@ -166,6 +167,7 @@ export default function TripDetailPage() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const [trip, setTrip] = useState<FullTrip | null>(null);
   const [loading, setLoading] = useState(true);
@@ -314,7 +316,7 @@ export default function TripDetailPage() {
   const confirmOrder = useCallback(async () => {
     if (!tripId) return;
     if (pendingDestinations.length === 0) {
-      Alert.alert('Attention', "L'itinéraire doit contenir au moins une ville.");
+      Alert.alert(t('tripDetail.attention'), t('tripDetail.itineraryMustHaveCity'));
       return;
     }
     setIsSavingOrder(true);
@@ -336,8 +338,8 @@ export default function TripDetailPage() {
       setPendingDestinations([]);
     } catch (err) {
       console.error('[confirmOrder] Error:', err);
-      const message = err instanceof Error ? err.message : 'Erreur inconnue';
-      Alert.alert('Erreur', `Impossible de sauvegarder: ${message}`);
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      Alert.alert(t('tripDetail.error'), t('tripDetail.cannotSave', { message }));
     } finally {
       setIsSavingOrder(false);
     }
@@ -365,12 +367,12 @@ export default function TripDetailPage() {
         resizeMode="cover"
       >
         <View className="center-content px-4" style={{ paddingTop: insets.top }}>
-          <Text className="text-zinc-400 text-sm mb-4 font-dmsans">Voyage introuvable.</Text>
+          <Text className="text-zinc-400 text-sm mb-4 font-dmsans">{t('tripDetail.tripNotFound')}</Text>
           <TouchableOpacity
             onPress={() => router.replace('/(tabs)/trips')}
             className="bg-zinc-800 px-6 py-3 rounded-lg"
           >
-            <Text className="text-label">Mes voyages</Text>
+            <Text className="text-label">{t('tripDetail.myTrips')}</Text>
           </TouchableOpacity>
         </View>
       </ImageBackground>
@@ -553,11 +555,11 @@ export default function TripDetailPage() {
                     borderWidth: 1,
                     borderColor: '#656E57',
                   }}>
-                    <StatCell value={`${trip.duration_days}j`} label="Durée" />
+                    <StatCell value={`${trip.duration_days}j`} label={t('tripDetail.duration')} />
                     <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginHorizontal: 8 }} />
-                    <StatCell value={String(destinations.length)} label={destinations.length > 1 ? 'Villes' : 'Ville'} />
+                    <StatCell value={String(destinations.length)} label={destinations.length > 1 ? t('tripDetail.cities') : t('tripDetail.city')} />
                     <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginHorizontal: 8 }} />
-                    <StatCell value={String(totalSpots)} label="Lieux" />
+                    <StatCell value={String(totalSpots)} label={t('tripDetail.places')} />
                   </View>
                 </View>
               </Animated.View>
@@ -569,10 +571,10 @@ export default function TripDetailPage() {
                 variant="secondary"
                 size="sm"
                 tabs={[
-                  { icon: 'route-line', label: 'Itinéraire' },
-                  { icon: 'money-dollar-circle-line', label: 'Budget' },
-                  { icon: 'compass-line', label: 'Pratique' },
-                  { icon: 'bus-line', label: 'Transport' },
+                  { icon: 'route-line', label: t('tripDetail.itinerary') },
+                  { icon: 'money-dollar-circle-line', label: t('tripDetail.budget') },
+                  { icon: 'compass-line', label: t('tripDetail.practical') },
+                  { icon: 'bus-line', label: t('tripDetail.transport') },
                 ]}
                 activeIndex={activeTab === 'itinerary' ? 0 : activeTab === 'budget' ? 1 : activeTab === 'practical' ? 2 : 3}
                 onTabChange={(index) => {
@@ -610,11 +612,11 @@ export default function TripDetailPage() {
                       color: 'rgba(255, 255, 255, 0.5)',
                       letterSpacing: 1,
                     }}>
-                      ÉTAPES DU VOYAGE
+                      {t('tripDetail.tripSteps').toUpperCase()}
                     </Text>
                     {!isEditingOrder ? (
                       <SecondaryButton
-                        title="Réordonner"
+                        title={t('tripDetail.reorder')}
                         variant="square"
                         size="sm"
                         leftIcon="draggable"
@@ -622,9 +624,9 @@ export default function TripDetailPage() {
                       />
                     ) : (
                       <View className="row-center">
-                        <SecondaryButton title="Annuler" variant="square" size="sm" onPress={cancelEditMode} />
+                        <SecondaryButton title={t('tripDetail.cancel')} variant="square" size="sm" onPress={cancelEditMode} />
                         <SecondaryButton
-                          title="OK"
+                          title={t('tripDetail.ok')}
                           leftIcon="check-line"
                           variant="square"
                           size="sm"
@@ -656,8 +658,8 @@ export default function TripDetailPage() {
                           }));
                           return {
                             dayNumber: day.day_number,
-                            spotName: day.theme || day.location || `Jour ${day.day_number}`,
-                            duration: `${day.spots?.length || 0} spots`,
+                            spotName: day.theme || day.location || t('tripDetail.day', { number: day.day_number }),
+                            duration: t('tripDetail.spots', { count: day.spots?.length || 0 }),
                             categories,
                           };
                         });
@@ -717,23 +719,23 @@ export default function TripDetailPage() {
                               </View>
                               <View style={{ flex: 1 }}>
                                 <Text style={{ fontFamily: 'Righteous', fontSize: 14, color: '#fff' }}>
-                                  {dest.city || 'Destination'}
+                                  {dest.city || t('tripDetail.destination')}
                                 </Text>
                                 {dest.days_spent && (
                                   <Text style={{ fontFamily: 'DMSans', fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
-                                    {dest.days_spent} jour{dest.days_spent > 1 ? 's' : ''}
+                                    {dest.days_spent} {dest.days_spent > 1 ? t('tripDetail.days_plural') : t('tripDetail.day_plural')}
                                   </Text>
                                 )}
                               </View>
                               <TouchableOpacity
                                 onPress={() => {
                                   Alert.alert(
-                                    'Supprimer cette ville ?',
-                                    `${dest.city} sera supprimée de l'itinéraire.`,
+                                    t('tripDetail.deleteCity'),
+                                    t('tripDetail.cityWillBeDeleted', { city: dest.city }),
                                     [
-                                      { text: 'Annuler', style: 'cancel' },
+                                      { text: t('tripDetail.cancel'), style: 'cancel' },
                                       {
-                                        text: 'Supprimer',
+                                        text: t('tripDetail.delete'),
                                         style: 'destructive',
                                         onPress: () => setPendingDestinations(prev => prev.filter(d => d.id !== dest.id)),
                                       },
@@ -757,7 +759,7 @@ export default function TripDetailPage() {
                   {/* Add city button */}
                   <View style={{ marginTop: 16 }}>
                     <PrimaryButton
-                      title="Ajouter une ville"
+                      title={t('tripDetail.addCity')}
                       leftIcon="add-line"
                       color="purple"
                       size="sm"
@@ -773,7 +775,7 @@ export default function TripDetailPage() {
               {activeTab === 'budget' && (
                 <View className="pb-6 px-4 pt-4" style={{minHeight: SCREEN_HEIGHT - headerHeight + COLLAPSE_RANGE}}>
                   {!budget ? (
-                    <EmptyState message="Aucune information budget disponible." />
+                    <EmptyState message={t('tripDetail.noBudgetInfo')} />
                   ) : (
                     <TripBudgetCard
                       totalEstimated={budget.total_estimated}
@@ -794,7 +796,7 @@ export default function TripDetailPage() {
               {activeTab === 'practical' && (
                 <View className="pb-6 px-4 pt-4" style={{minHeight: SCREEN_HEIGHT - headerHeight + COLLAPSE_RANGE}}>
                   {!practical ? (
-                    <EmptyState message="Aucune info pratique disponible." />
+                    <EmptyState message={t('tripDetail.noPracticalInfo')} />
                   ) : (
                     <PracticalCard info={practical} />
                   )}

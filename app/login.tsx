@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-remix-icon';
 import Loader from '@/components/Loader';
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -19,19 +20,19 @@ import {useAuth} from '@/context/AuthContext';
 type Flow = 'signin' | 'signup' | 'forgot';
 
 // ── Error mapping ──────────────────────────────────────────────────────────────
-function friendlyError(msg: string): string {
-  if (msg.includes('Invalid login credentials')) return 'Email ou mot de passe incorrect.';
-  if (msg.includes('Email not confirmed')) return 'Confirmez votre email avant de vous connecter.';
-  if (msg.includes('User already registered')) return 'Un compte existe déjà avec cet email.';
-  if (msg.includes('Password should be')) return 'Le mot de passe doit contenir au moins 6 caractères.';
-  if (msg.includes('rate limit') || msg.includes('too many')) return 'Trop de tentatives. Attendez quelques minutes.';
-  if (msg.includes('Unable to validate') || msg.includes('network')) return 'Connexion impossible. Vérifiez votre connexion.';
-  if (msg.includes('Email link is invalid') || msg.includes('Token has expired')) return 'Ce lien a expiré.';
+function friendlyError(msg: string, t: (key: string) => string): string {
+  if (msg.includes('Invalid login credentials')) return t('auth.emailOrPasswordIncorrect');
+  if (msg.includes('Email not confirmed')) return t('auth.confirmEmailFirst');
+  if (msg.includes('User already registered')) return t('auth.accountAlreadyExists');
+  if (msg.includes('Password should be')) return t('auth.passwordTooShort');
+  if (msg.includes('rate limit') || msg.includes('too many')) return t('auth.tooManyAttempts');
+  if (msg.includes('Unable to validate') || msg.includes('network')) return t('auth.connectionFailed');
+  if (msg.includes('Email link is invalid') || msg.includes('Token has expired')) return t('auth.linkExpired');
   return msg;
 }
 
 // ── Password strength ──────────────────────────────────────────────────────────
-function PasswordStrength({ password }: { password: string }) {
+function PasswordStrength({ password, t }: { password: string; t: (key: string) => string }) {
   if (!password) return null;
 
   const checks = [
@@ -41,7 +42,13 @@ function PasswordStrength({ password }: { password: string }) {
     /[^a-zA-Z0-9]/.test(password),
   ];
   const score = checks.filter(Boolean).length;
-  const levels = ['Très faible', 'Faible', 'Moyen', 'Fort', 'Très fort'];
+  const levels = [
+    t('auth.strengthVeryWeak'),
+    t('auth.strengthWeak'),
+    t('auth.strengthMedium'),
+    t('auth.strengthStrong'),
+    t('auth.strengthVeryStrong'),
+  ];
   const colors = ['#ef4444', '#f97316', '#eab308', '#3b82f6', '#10b981'];
 
   return (
@@ -116,6 +123,7 @@ function Field({
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function Login() {
   const { signIn, signUp, signInWithGoogle, signInWithApple, resetPassword, resendConfirmation } = useAuth();
+  const { t } = useTranslation();
 
   const [flow, setFlow] = useState<Flow>('signin');
   const [email, setEmail] = useState('');
@@ -140,10 +148,10 @@ export default function Login() {
   useEffect(() => {
     Linking.getInitialURL().then((url) => {
       if (url?.includes('confirmed=true')) {
-        setSuccessMsg('Email confirmé ! Vous pouvez maintenant vous connecter.');
+        setSuccessMsg(t('auth.emailConfirmed'));
       }
     });
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     setTimeout(() => emailRef.current?.focus(), 100);
@@ -159,23 +167,23 @@ export default function Login() {
     try {
       if (flow === 'signin') {
         const { error } = await signIn(email, password);
-        if (error) setError(friendlyError(error.message));
+        if (error) setError(friendlyError(error.message, t));
       } else if (flow === 'signup') {
         if (password.length < 6) {
-          setError('Le mot de passe doit contenir au moins 6 caractères.');
+          setError(t('auth.passwordTooShort'));
           setLoading(false);
           return;
         }
         const { error, emailSent: sent } = await signUp(email, password);
         if (error) {
-          setError(friendlyError(error.message));
+          setError(friendlyError(error.message, t));
         } else if (sent) {
           setEmailSent(true);
         }
       } else if (flow === 'forgot') {
         const { error } = await resetPassword(email);
         if (error) {
-          setError(friendlyError(error.message));
+          setError(friendlyError(error.message, t));
         } else {
           setResetSent(true);
         }
@@ -190,9 +198,9 @@ export default function Login() {
     const { error } = await resendConfirmation(email);
     setResending(false);
     if (error) {
-      setError(friendlyError(error.message));
+      setError(friendlyError(error.message, t));
     } else {
-      setSuccessMsg('Email renvoyé ! Vérifiez votre boîte mail.');
+      setSuccessMsg(t('auth.emailResent'));
     }
   };
 
@@ -201,7 +209,7 @@ export default function Login() {
     setError(null);
     const { error } = await signInWithGoogle();
     setSocialLoading(false);
-    if (error) setError('Connexion Google impossible.');
+    if (error) setError(t('auth.googleLoginFailed'));
   };
 
   const handleAppleSignIn = async () => {
@@ -210,7 +218,7 @@ export default function Login() {
     const { error } = await signInWithApple();
     setAppleLoading(false);
     if (error && !error.message.includes('cancelled')) {
-      setError('Connexion Apple impossible.');
+      setError(t('auth.appleLoginFailed'));
     }
   };
 
@@ -221,14 +229,12 @@ export default function Login() {
         <View className="w-16 h-16 rounded-full items-center justify-center mb-4 bg-blue-500/15 border border-blue-500/30">
           <Icon name="mail-check-line" size={28} color="#60a5fa" />
         </View>
-        <Text className="text-xl font-bold text-white mb-2.5 text-center font-righteous">Vérifiez votre email</Text>
+        <Text className="text-xl font-bold text-white mb-2.5 text-center font-righteous">{t('authGuard.confirmYourEmail')}</Text>
         <Text className="text-sm text-white/50 text-center leading-[22px] mb-6 font-dmsans">
-          Un lien de confirmation a été envoyé à{' '}
-          <Text className="text-white font-semibold font-dmsans">{email}</Text>.
-          {'\n'}Cliquez dessus pour activer votre compte.
+          {t('auth.confirmationEmailSent', { email })}
         </Text>
         <View className="bg-surface-secondary border border-white/10 rounded-[20px] p-5 gap-4 w-full">
-          <Text className="text-xs text-white/50 text-center font-dmsans">Vous n'avez rien reçu ?</Text>
+          <Text className="text-xs text-white/50 text-center font-dmsans">{t('auth.resendEmail')}</Text>
           <TouchableOpacity
             className={`border border-white/10 rounded-[10px] h-11 items-center justify-center px-4 ${resending ? 'opacity-60' : ''}`}
             onPress={handleResend}
@@ -238,12 +244,12 @@ export default function Login() {
             {resending ? (
               <Loader size={24} color="#a1a1aa" />
             ) : (
-              <Text className="text-white/80 text-[13px] font-medium font-dmsans">Renvoyer l'email</Text>
+              <Text className="text-white/80 text-[13px] font-medium font-dmsans">{t('auth.resendEmail')}</Text>
             )}
           </TouchableOpacity>
         </View>
         <TouchableOpacity onPress={() => { setEmailSent(false); setFlow('signin'); }}>
-          <Text className="text-[13px] text-white/50 mt-4 font-dmsans">Retour à la connexion</Text>
+          <Text className="text-[13px] text-white/50 mt-4 font-dmsans">{t('auth.backToLogin')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -256,14 +262,12 @@ export default function Login() {
         <View className="w-16 h-16 rounded-full items-center justify-center mb-4 bg-emerald-500/15 border border-emerald-500/30">
           <Icon name="mail-send-line" size={28} color="#34d399" />
         </View>
-        <Text className="text-xl font-bold text-white mb-2.5 text-center font-righteous">Email envoyé !</Text>
+        <Text className="text-xl font-bold text-white mb-2.5 text-center font-righteous">{t('auth.passwordUpdated')}</Text>
         <Text className="text-sm text-white/50 text-center leading-[22px] mb-6 font-dmsans">
-          Un lien de réinitialisation a été envoyé à{' '}
-          <Text className="text-white font-semibold font-dmsans">{email}</Text>.
-          {'\n'}Le lien expire dans 24 heures.
+          {t('auth.passwordResetSent', { email })}
         </Text>
         <TouchableOpacity onPress={() => { setResetSent(false); setFlow('signin'); }}>
-          <Text className="text-[13px] font-dmsans-medium text-white/50 mt-4">← Retour à la connexion</Text>
+          <Text className="text-[13px] font-dmsans-medium text-white/50 mt-4">← {t('auth.backToLogin')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -271,15 +275,15 @@ export default function Login() {
 
   // ── Form titles ─────────────────────────────────────────────────────────────
   const titles: Record<Flow, string> = {
-    signin: 'Bon retour 👋',
-    signup: 'Créer un compte',
-    forgot: 'Réinitialiser le mot de passe',
+    signin: t('auth.logIn'),
+    signup: t('auth.createAccount'),
+    forgot: t('auth.passwordRecovery'),
   };
 
   const subtitles: Record<Flow, string> = {
-    signin: 'Connectez-vous pour accéder à vos voyages.',
-    signup: 'Rejoignez-nous pour découvrir vos voyages.',
-    forgot: 'Entrez votre email pour recevoir un lien.',
+    signin: t('auth.connectToAccess'),
+    signup: t('auth.joinUs'),
+    forgot: t('auth.enterEmailForReset'),
   };
 
   // ── Main form ─────────────────────────────────────────────────────────────
@@ -310,16 +314,16 @@ export default function Login() {
           {flow === 'forgot' && (
             <TouchableOpacity className="flex-row items-center gap-1.5" onPress={() => setFlow('signin')} activeOpacity={0.7}>
               <Icon name="arrow-left-line" size={14} color="#71717a" />
-              <Text className="label-micro">Retour à la connexion</Text>
+              <Text className="label-micro">{t('auth.backToLogin')}</Text>
             </TouchableOpacity>
           )}
 
           {/* Email */}
           <Field
-            label="Email"
+            label={t('auth.emailLabel')}
             value={email}
             onChangeText={setEmail}
-            placeholder="vous@exemple.com"
+            placeholder={t('auth.emailPlaceholder')}
             keyboardType="email-address"
             autoComplete="email"
             error={!!error}
@@ -330,10 +334,10 @@ export default function Login() {
           {flow !== 'forgot' && (
             <View>
               <Field
-                label="Mot de passe"
+                label={t('auth.passwordLabel')}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="••••••••"
+                placeholder={t('auth.passwordPlaceholder')}
                 secureTextEntry={!showPass}
                 autoComplete={flow === 'signup' ? 'new-password' : 'password'}
                 error={!!error}
@@ -343,10 +347,10 @@ export default function Login() {
                   </TouchableOpacity>
                 }
               />
-              {flow === 'signup' && <PasswordStrength password={password} />}
+              {flow === 'signup' && <PasswordStrength password={password} t={t} />}
               {flow === 'signin' && (
                 <TouchableOpacity onPress={() => setFlow('forgot')} activeOpacity={0.7} className="mt-2">
-                  <Text className="text-xs text-white/50 text-right font-dmsans">Mot de passe oublié ?</Text>
+                  <Text className="text-xs text-white/50 text-right font-dmsans">{t('auth.forgotPassword')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -362,7 +366,7 @@ export default function Login() {
 
           {/* Submit */}
           <PrimaryButton
-            title={flow === 'signin' ? 'Se connecter' : flow === 'signup' ? 'Créer mon compte' : 'Envoyer le lien'}
+            title={flow === 'signin' ? t('auth.signIn') : flow === 'signup' ? t('auth.createAccount') : t('auth.sendResetLink')}
             onPress={handleSubmit}
             loading={loading}
             fullWidth
@@ -382,7 +386,7 @@ export default function Login() {
                 ) : (
                   <>
                     <Icon name="google-fill" size={18} color="#fff" />
-                    <Text className="text-white/80 text-[15px] font-medium font-dmsans">Continuer avec Google</Text>
+                    <Text className="text-white/80 text-[15px] font-medium font-dmsans">{t('auth.continueWithGoogle')}</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -399,7 +403,7 @@ export default function Login() {
                   ) : (
                     <>
                       <Icon name="apple-fill" size={18} color="#fff" />
-                      <Text className="text-white/80 text-[15px] font-medium font-dmsans">Continuer avec Apple</Text>
+                      <Text className="text-white/80 text-[15px] font-medium font-dmsans">{t('auth.continueWithApple')}</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -413,13 +417,13 @@ export default function Login() {
               <>
                 <View className="flex-row items-center gap-2.5">
                   <View className="flex-1 h-px bg-white/10" />
-                  <Text className="text-white/30 text-xs font-dmsans">ou</Text>
+                  <Text className="text-white/30 text-xs font-dmsans">{t('common.or')}</Text>
                   <View className="flex-1 h-px bg-white/10" />
                 </View>
                 <TouchableOpacity onPress={() => setFlow('signup')} activeOpacity={0.7}>
                   <Text className="text-white/50 text-[13px] text-center font-dmsans">
-                    Pas encore de compte ?{' '}
-                    <Text className="text-blue-400 font-dmsans-semibold">S'inscrire</Text>
+                    {t('auth.noAccount')}
+                    <Text className="text-blue-400 font-dmsans-semibold">{t('auth.signUp')}</Text>
                   </Text>
                 </TouchableOpacity>
               </>
@@ -427,18 +431,18 @@ export default function Login() {
             {flow === 'signup' && (
               <TouchableOpacity onPress={() => setFlow('signin')} activeOpacity={0.7}>
                 <Text className="text-white/50 text-[13px] text-center font-dmsans">
-                  Déjà un compte ?{' '}
-                  <Text className="text-blue-400 font-dmsans-semibold">Se connecter</Text>
+                  {t('auth.alreadyHaveAccount')}
+                  <Text className="text-blue-400 font-dmsans-semibold">{t('auth.signIn')}</Text>
                 </Text>
               </TouchableOpacity>
             )}
           </View>
-        </View>
 
-        {/* legal */}
-        <Text className="text-center text-[11px] text-white/30 mt-4 font-dmsans">
-          En continuant, vous acceptez nos conditions d'utilisation.
-        </Text>
+          {/* legal */}
+          <Text className="text-center text-[11px] text-white/30 mt-4 font-dmsans">
+            {t('auth.termsAgreement')}
+          </Text>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

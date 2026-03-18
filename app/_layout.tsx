@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ImageBackground, Platform } from 'react-native';
 import { Toaster } from 'sonner-native';
 import { AuthProvider } from '@/context/AuthContext';
+import { NotificationProvider } from '@/context/NotificationContext';
 import { useAuthGuardState, LoadingScreen, NetworkErrorScreen, EmailPendingScreen } from '@/components/AuthGuard';
 import DebugPanel from '../components/DebugPanel';
 import { useCallback, useState, useEffect } from 'react';
@@ -23,8 +24,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import {AnalysisProvider} from "@/context/AnalysisContext";
 import { initPostHog } from '@/lib/posthog';
 import { useUTMTracking } from '@/hooks/useUTMTracking';
+import { initI18n } from '../src/i18n/index';
 
-// Keep splash screen visible while loading fonts
 SplashScreen.preventAutoHideAsync();
 
 function AuthGate({ onRetry }: { onRetry: () => void }) {
@@ -67,7 +68,18 @@ function AuthGate({ onRetry }: { onRetry: () => void }) {
 
 export default function RootLayout() {
   const [retryKey, setRetryKey] = useState(0);
+  const [i18nReady, setI18nReady] = useState(false);
   const handleRetry = useCallback(() => setRetryKey((k) => k + 1), []);
+
+  // Init i18n (runs once)
+  useEffect(() => {
+    initI18n()
+      .then(() => setI18nReady(true))
+      .catch((err) => {
+        console.error('[i18n] init failed:', err);
+        setI18nReady(true);
+      });
+  }, []);
 
   // Load custom fonts
   const [fontsLoaded] = useFonts({
@@ -78,12 +90,12 @@ export default function RootLayout() {
     'DMSans-Bold': DMSans_700Bold,
   });
 
-  // Hide splash screen once fonts are loaded
+  // Hide splash screen once fonts and i18n are ready
   useEffect(() => {
-    if (fontsLoaded) {
+    if (fontsLoaded && i18nReady) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
+  }, [fontsLoaded, i18nReady]);
 
   // Sync JWT to shared storage for iOS Share Extension
   useEffect(() => {
@@ -113,8 +125,8 @@ export default function RootLayout() {
     initPostHog();
   }, []);
 
-  // Don't render until fonts are loaded
-  if (!fontsLoaded) {
+  // Don't render until fonts and i18n are ready
+  if (!fontsLoaded || !i18nReady) {
     return null;
   }
 
@@ -127,11 +139,13 @@ export default function RootLayout() {
       >
         <StatusBar style="light" />
         <AuthProvider key={retryKey}>
-          <AnalysisProvider>
-            <AuthGate onRetry={handleRetry} />
-            <Toaster position="top-center" />
-            {process.env.EXPO_PUBLIC_DEV_MODE === 'true' && <DebugPanel />}
-          </AnalysisProvider>
+          <NotificationProvider>
+            <AnalysisProvider>
+              <AuthGate onRetry={handleRetry} />
+              <Toaster position="top-center" />
+              {process.env.EXPO_PUBLIC_DEV_MODE === 'true' && <DebugPanel />}
+            </AnalysisProvider>
+          </NotificationProvider>
         </AuthProvider>
       </ImageBackground>
     </SafeAreaProvider>

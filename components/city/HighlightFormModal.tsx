@@ -4,9 +4,9 @@
  */
 import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Modal, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-remix-icon';
 import { HighlightCategory, HIGHLIGHT_CATEGORIES } from '@/types/api';
-import { CATEGORY_COLORS } from '@/components/city/CategoryFilterChips';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { SecondaryButton, type ColorScheme } from '@/components/SecondaryButton';
 
@@ -17,6 +17,18 @@ const CATEGORY_TO_COLOR_SCHEME: Record<HighlightCategory, ColorScheme> = {
   shopping: 'shopping',
   nightlife: 'nightlife',
   other: 'default',
+};
+
+const getCategoryLabel = (cat: HighlightCategory, t: (key: string) => string): string => {
+  switch (cat) {
+    case 'food': return t('spotReview.restaurant');
+    case 'culture': return t('spotReview.attraction');
+    case 'nature': return t('spotReview.activity');
+    case 'shopping': return t('spotReview.shopping');
+    case 'nightlife': return t('spotReview.bar');
+    case 'other': return t('spotReview.other');
+    default: return cat;
+  }
 };
 
 interface HighlightFormModalProps {
@@ -40,8 +52,9 @@ export function HighlightFormModal({
   addressStatus,
   onSubmit,
   submitting,
-  submitLabel = 'Enregistrer',
+  submitLabel,
 }: HighlightFormModalProps) {
+  const { t } = useTranslation();
   const canSubmit = form.name?.trim() && addressStatus !== 'loading';
 
   return (
@@ -68,11 +81,11 @@ export function HighlightFormModal({
           <View style={styles.form}>
             {/* Name */}
             <View>
-              <Text style={styles.label}>Nom *</Text>
+              <Text style={styles.label}>{t('highlightReview.name')} *</Text>
               <TextInput
                 value={form.name ?? ''}
                 onChangeText={(v) => setForm({ ...form, name: v })}
-                placeholder="Nom du point"
+                placeholder={t('spotReview.name')}
                 placeholderTextColor="rgba(255, 255, 255, 0.3)"
                 style={styles.input}
               />
@@ -80,7 +93,7 @@ export function HighlightFormModal({
 
             {/* Category */}
             <View>
-              <Text style={styles.label}>Catégorie</Text>
+              <Text style={styles.label}>{t('highlightReview.category')}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View style={styles.categoryRow}>
                   {(Object.keys(HIGHLIGHT_CATEGORIES) as HighlightCategory[]).map((cat) => {
@@ -88,7 +101,7 @@ export function HighlightFormModal({
                     return (
                       <SecondaryButton
                         key={cat}
-                        title={HIGHLIGHT_CATEGORIES[cat].label}
+                        title={getCategoryLabel(cat, t)}
                         active={isSelected}
                         colorScheme={CATEGORY_TO_COLOR_SCHEME[cat]}
                         variant="pill"
@@ -103,11 +116,11 @@ export function HighlightFormModal({
 
             {/* Subtype */}
             <View>
-              <Text style={styles.label}>Sous-type</Text>
+              <Text style={styles.label}>{t('highlightReview.subtype')}</Text>
               <TextInput
                 value={form.subtype ?? ''}
                 onChangeText={(v) => setForm({ ...form, subtype: v || undefined })}
-                placeholder="Ex: Restaurant italien..."
+                placeholder={t('highlightReview.subtypePlaceholder')}
                 placeholderTextColor="rgba(255, 255, 255, 0.3)"
                 style={styles.input}
               />
@@ -115,11 +128,11 @@ export function HighlightFormModal({
 
             {/* Address */}
             <View>
-              <Text style={styles.label}>Adresse</Text>
+              <Text style={styles.label}>{t('spotReview.address')}</Text>
               <TextInput
                 value={form.address ?? ''}
                 onChangeText={(v) => setForm({ ...form, address: v || undefined })}
-                placeholder="Ex: 15 rue de Rivoli, Paris"
+                placeholder={t('highlightReview.optional')}
                 placeholderTextColor="rgba(255, 255, 255, 0.3)"
                 style={[
                   styles.input,
@@ -128,23 +141,23 @@ export function HighlightFormModal({
                 ]}
               />
               {addressStatus === 'loading' && (
-                <Text style={styles.statusText}>Vérification de l'adresse...</Text>
+                <Text style={styles.statusText}>{t('common.loading')}</Text>
               )}
               {addressStatus === 'found' && (
-                <Text style={styles.successText}>✓ Position localisée</Text>
+                <Text style={styles.successText}>{t('cityReview.addressFound')}</Text>
               )}
               {addressStatus === 'not_found' && (
-                <Text style={styles.warningText}>⚠ Adresse non trouvée – sera localisée automatiquement</Text>
+                <Text style={styles.warningText}>{t('cityReview.addressNotFound')}</Text>
               )}
             </View>
 
             {/* Description */}
             <View>
-              <Text style={styles.label}>Description</Text>
+              <Text style={styles.label}>{t('highlightReview.description')}</Text>
               <TextInput
                 value={form.description ?? ''}
                 onChangeText={(v) => setForm({ ...form, description: v || undefined })}
-                placeholder="Optionnel"
+                placeholder={t('highlightReview.optional')}
                 placeholderTextColor="rgba(255, 255, 255, 0.3)"
                 multiline
                 numberOfLines={3}
@@ -154,11 +167,11 @@ export function HighlightFormModal({
 
             {/* Tips */}
             <View>
-              <Text style={styles.label}>Conseils</Text>
+              <Text style={styles.label}>{t('highlightReview.tips')}</Text>
               <TextInput
                 value={form.tips ?? ''}
                 onChangeText={(v) => setForm({ ...form, tips: v || undefined })}
-                placeholder="Optionnel"
+                placeholder={t('highlightReview.optional')}
                 placeholderTextColor="rgba(255, 255, 255, 0.3)"
                 multiline
                 numberOfLines={2}
@@ -168,7 +181,7 @@ export function HighlightFormModal({
 
             {/* Must-see toggle */}
             <SecondaryButton
-              title="Incontournable"
+              title={t('highlightReview.mustSeeLabel')}
               leftIcon="star-fill"
               active={form.is_must_see}
               colorScheme="mustsee"
@@ -178,7 +191,7 @@ export function HighlightFormModal({
 
             {/* Submit */}
             <PrimaryButton
-              title={submitLabel}
+              title={submitLabel ?? t('highlightReview.save')}
               leftIcon={submitting ? undefined : 'save-line'}
               onPress={onSubmit}
               disabled={!canSubmit || submitting}

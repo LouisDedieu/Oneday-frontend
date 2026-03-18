@@ -9,6 +9,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {Animated, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View,} from 'react-native';
 import {useRouter} from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-remix-icon';
 import {useAuth} from "@/context/AuthContext";
 import {PrimaryButton} from '@/components/PrimaryButton';
@@ -49,7 +50,7 @@ function PasswordStrength({ password }: { password: string }) {
 
 // ─── Success screen ───────────────────────────────────────────────────────────
 
-function SuccessScreen() {
+function SuccessScreen({ t }: { t: (key: string) => string }) {
   const opacity = useRef(new Animated.Value(0)).current;
   const scale   = useRef(new Animated.Value(0.95)).current;
 
@@ -75,8 +76,8 @@ function SuccessScreen() {
         </View>
 
         <View className="items-center gap-1">
-          <Text className="text-xl font-bold text-white font-righteous">Mot de passe mis à jour !</Text>
-          <Text className="text-sm text-white/50 font-dmsans">Redirection en cours…</Text>
+          <Text className="text-xl font-bold text-white font-righteous">{t('auth.passwordUpdated')}</Text>
+          <Text className="text-sm text-white/50 font-dmsans">{t('auth.redirecting')}</Text>
         </View>
       </Animated.View>
     </View>
@@ -87,6 +88,7 @@ function SuccessScreen() {
 
 export default function ResetPassword() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { updatePassword, clearPasswordRecovery } = useAuth();
 
   const [password,        setPassword]        = useState('');
@@ -104,11 +106,11 @@ export default function ResetPassword() {
     setError(null);
 
     if (password.length < 8) {
-      setError('Le mot de passe doit contenir au moins 8 caractères.');
+      setError(t('auth.passwordTooShort'));
       return;
     }
     if (password !== confirm) {
-      setError('Les mots de passe ne correspondent pas.');
+      setError(t('auth.passwordsDoNotMatch'));
       return;
     }
 
@@ -119,7 +121,7 @@ export default function ResetPassword() {
     if (updateError) {
       setError(
         updateError.message.includes('expired')
-          ? 'Ce lien a expiré. Demandez un nouveau lien de réinitialisation.'
+          ? t('auth.linkExpiredRequestNew')
           : updateError.message,
       );
     } else {
@@ -131,7 +133,7 @@ export default function ResetPassword() {
     }
   };
 
-  if (success) return <SuccessScreen />;
+  if (success) return <SuccessScreen t={t} />;
 
   return (
     <KeyboardAvoidingView
@@ -161,8 +163,8 @@ export default function ResetPassword() {
               >
                 <Icon name="shield-check-fill" size={24} color="#ffffff" />
               </View>
-              <Text className="text-2xl font-bold text-white font-righteous">Nouveau mot de passe</Text>
-              <Text className="text-sm text-white/50 mt-1 font-dmsans">Choisissez un mot de passe sécurisé.</Text>
+              <Text className="text-2xl font-bold text-white font-righteous">{t('auth.newPassword')}</Text>
+              <Text className="text-sm text-white/50 mt-1 font-dmsans">{t('auth.chooseSecurePassword')}</Text>
             </View>
 
             {/* ── Card ── */}
@@ -178,14 +180,14 @@ export default function ResetPassword() {
               {/* Password field */}
               <View className="gap-1.5">
                 <Text className="text-xs font-medium text-white/60 uppercase tracking-wide font-dmsans">
-                  Nouveau mot de passe
+                  {t('auth.newPassword')}
                 </Text>
                 <View className="relative">
                   <TextInput
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPass}
-                    placeholder="••••••••"
+                    placeholder={t('auth.passwordPlaceholder')}
                     autoComplete="new-password"
                     placeholderTextColor="rgba(255,255,255,0.3)"
                     onFocus={() => setPasswordFocused(true)}
@@ -216,13 +218,13 @@ export default function ResetPassword() {
               {/* Confirm field */}
               <View className="gap-1.5">
                 <Text className="text-xs font-medium text-white/60 uppercase tracking-wide font-dmsans">
-                  Confirmer le mot de passe
+                  {t('auth.confirmPassword')}
                 </Text>
                 <TextInput
                   value={confirm}
                   onChangeText={setConfirm}
                   secureTextEntry={!showPass}
-                  placeholder="••••••••"
+                  placeholder={t('auth.passwordPlaceholder')}
                   autoComplete="new-password"
                   placeholderTextColor="rgba(255,255,255,0.3)"
                   onFocus={() => setConfirmFocused(true)}
@@ -240,7 +242,7 @@ export default function ResetPassword() {
                 />
                 {confirmHasError && (
                   <Text className="text-xs text-red-400 font-dmsans">
-                    Les mots de passe ne correspondent pas.
+                    {t('auth.passwordsDoNotMatch')}
                   </Text>
                 )}
               </View>
@@ -262,7 +264,7 @@ export default function ResetPassword() {
 
               {/* Submit button */}
               <PrimaryButton
-                title="Mettre à jour le mot de passe"
+                title={t('auth.updatePassword')}
                 leftIcon="lock-unlock-line"
                 onPress={handleSubmit}
                 loading={loading}
