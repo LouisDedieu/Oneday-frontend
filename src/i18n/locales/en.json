@@ -441,5 +441,53 @@
     "bike": "Bike",
     "boat": "Boat",
     "transport": "Transport"
+  },
+  "errors": {
+    "unknown": "An unknown error occurred",
+    "auth": {
+      "invalidCredentials": "Invalid credentials",
+      "tokenExpired": "Your session has expired. Please reconnect.",
+      "emailNotConfirmed": "Please confirm your email address",
+      "userNotFound": "User not found",
+      "insufficientPermissions": "You don't have the necessary permissions",
+      "sessionNotFound": "Session not found"
+    },
+    "video": {
+      "invalidUrl": "Invalid video URL",
+      "notFound": "Video not found",
+      "alreadyAnalyzed": "This video has already been analyzed",
+      "durationExceeded": "Video duration exceeds the allowed limit",
+      "extractionFailed": "Video data extraction failed",
+      "downloadFailed": "Video download failed",
+      "unsupportedFormat": "Unsupported video format",
+      "analysisFailed": "Video analysis failed"
+    },
+    "trip": {
+      "notFound": "Trip not found",
+      "alreadyExists": "This trip already exists",
+      "createFailed": "Failed to create trip",
+      "updateFailed": "Failed to update trip",
+      "deleteFailed": "Failed to delete trip"
+    },
+    "destination": {
+      "notFound": "Destination not found",
+      "createFailed": "Failed to create destination"
+    },
+    "share": {
+      "invalidPayload": "Invalid share data",
+      "notSupported": "Content type not supported",
+      "processingFailed": "Share processing failed"
+    },
+    "network": {
+      "timeout": "Request timeout",
+      "connectionFailed": "Connection failed",
+      "unavailable": "Service temporarily unavailable"
+    },
+    "server": {
+      "internal": "An internal error occurred",
+      "unavailable": "Service temporarily unavailable",
+      "database": "Database error",
+      "externalServiceError": "External service error"
+    }
   }
 }
