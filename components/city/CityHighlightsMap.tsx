@@ -7,6 +7,7 @@ import {Text, View} from 'react-native';
 import MapView, {Callout, Marker, Region} from 'react-native-maps';
 import {Highlight, HighlightCategory} from '@/types/api';
 import {updateHighlightCoordinates} from '@/services/cityReviewService';
+import {geocodeHighlight as geocodeHighlightService} from '@/services/geocodingService';
 import Loader from "@/components/Loader";
 
 const CATEGORY_COLORS: Record<HighlightCategory, string> = {
@@ -33,16 +34,6 @@ type GeocodingResult = {
   source: string;
   highlight: Highlight;
 };
-
-function normalizeTextForLocationIQAPI(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[''`]/g, "'")
-    .replace(/[""„]/g, '"')
-    .replace(/[^\w\s,.-]/g, '')
-    .trim();
-}
 
 interface CityHighlightsMapProps {
   highlights: Highlight[];
@@ -85,48 +76,23 @@ export function CityHighlightsMap({
     highlight: Highlight,
     cityContext: string
   ): Promise<GeocodingResult | null> {
-    // Build query: "highlight name, city, country" or use address
-    const queries = [];
+    try {
+      const result = await geocodeHighlightService(
+        highlight.name,
+        highlight.address,
+        cityContext
+      );
 
-    if (highlight.address) {
-      // Always include city context — bare address alone can match wrong country
-      queries.push(`${highlight.address}, ${cityContext}`);
-    }
-
-    queries.push(`${highlight.name}, ${cityContext}`);
-    queries.push(normalizeTextForLocationIQAPI(`${highlight.name}, ${cityContext}`));
-
-    for (const query of queries) {
-      try {
-        await new Promise((r) => setTimeout(r, 1100)); // Rate limit
-
-        const response = await fetch(
-          `https://us1.locationiq.com/v1/search?key=${process.env.EXPO_PUBLIC_LOCATIONIQ_KEY}&q=${encodeURIComponent(query)}&format=json`,
-          { headers: { Accept: 'application/json' } }
-        );
-
-        if (response.status === 429) {
-          console.warn('Rate limited, stopping geocoding');
-          return null;
-        }
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.length > 0) {
-            const lat = parseFloat(data[0].lat);
-            const lon = parseFloat(data[0].lon);
-
-            return {
-              coords: [lat, lon],
-              confidence: 'high',
-              source: 'LocationIQ API',
-              highlight,
-            };
-          }
-        }
-      } catch (err) {
-        console.error('Geocoding error:', err);
+      if (result) {
+        return {
+          coords: result.coords,
+          confidence: result.confidence,
+          source: result.source,
+          highlight,
+        };
       }
+    } catch (err) {
+      console.error('Geocoding error:', err);
     }
 
     // Fallback: use city center as approximation

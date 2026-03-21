@@ -87,15 +87,3 @@ export async function updateDestinationCoordinates(destId: string, lat: number, 
   }
 }
 
-export function normalizeTextForLocationIQAPI(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[ðþæø]/gi, (char) => {
-      const map: { [key: string]: string } = {
-        'ð': 'd', 'þ': 'th', 'æ': 'ae', 'ø': 'o',
-        'Ð': 'D', 'Þ': 'TH', 'Æ': 'AE', 'Ø': 'O',
-      };
-      return map[char] || char;
-    });
-}

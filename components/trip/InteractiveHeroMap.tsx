@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Animated, Easing } from 'react-native';
 import MapView, { Marker, Polyline, Callout, Region } from 'react-native-maps';
 import { Destination } from '@/types/api';
-import { normalizeTextForLocationIQAPI, updateDestinationCoordinates } from '@/services/tripService';
+import { updateDestinationCoordinates } from '@/services/tripService';
+import { geocodeDestination } from '@/services/geocodingService';
 import Loader from "@/components/Loader";
 
 type GeocodingResult = {
@@ -70,75 +71,23 @@ export function InteractiveHeroMap({ destinations, highlightedCity }: Interactiv
   }, [highlightedCity, results]);
 
   async function geocodeLocation(
-    query: string,
+    city: string | null,
     country: string | null,
     destination: Destination
   ): Promise<GeocodingResult | null> {
-    const attempts = [
-      { q: query, label: 'original' },
-      { q: normalizeTextForLocationIQAPI(query), label: 'normalisé' },
-    ];
-
-    for (const attempt of attempts) {
-      try {
-        await new Promise(r => setTimeout(r, 1100));
-
-        const response = await fetch(
-          `https://us1.locationiq.com/v1/search?key=${process.env.EXPO_PUBLIC_LOCATIONIQ_KEY}&q=${encodeURIComponent(attempt.q)}&format=json`,
-          { headers: { 'Accept': 'application/json' } }
-        );
-
-        if (response.status === 429) {
-          return null;
-        }
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.length > 0) {
-            const lat = parseFloat(data[0].lat);
-            const lon = parseFloat(data[0].lon);
-
-            return {
-              coords: [lat, lon],
-              confidence: 'high',
-              source: 'LocationIQ API',
-              destination
-            };
-          }
-        }
-      } catch (err) {
-        console.error('Geocoding error:', err);
+    try {
+      const result = await geocodeDestination(city, country);
+      if (result) {
+        return {
+          coords: result.coords,
+          confidence: result.confidence,
+          source: result.source,
+          destination,
+        };
       }
+    } catch (err) {
+      console.error('Geocoding error:', err);
     }
-
-    if (country) {
-      try {
-        await new Promise(r => setTimeout(r, 1100));
-
-        const response = await fetch(
-          `https://us1.locationiq.com/v1/search?key=${process.env.EXPO_PUBLIC_LOCATIONIQ_KEY}&q=${encodeURIComponent(country)}&format=json`,
-          { headers: { 'Accept': 'application/json' } }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.length > 0) {
-            const lat = parseFloat(data[0].lat);
-            const lon = parseFloat(data[0].lon);
-
-            return {
-              coords: [lat, lon],
-              confidence: 'low',
-              source: `Centre du pays (${country})`,
-              destination
-            };
-          }
-        }
-      } catch (err) {
-        console.error('Fallback geocoding error:', err);
-      }
-    }
-
     return null;
   }
 
@@ -167,8 +116,7 @@ export function InteractiveHeroMap({ destinations, highlightedCity }: Interactiv
         }
 
         if (dest.city || dest.country) {
-          const query = [dest.city, dest.country].filter(Boolean).join(', ');
-          const result = await geocodeLocation(query, dest.country ?? null, dest);
+          const result = await geocodeLocation(dest.city ?? null, dest.country ?? null, dest);
 
           if (result) {
             resultsArray.push(result);

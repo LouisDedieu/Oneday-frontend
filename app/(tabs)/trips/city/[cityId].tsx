@@ -30,6 +30,7 @@ import {
   updateHighlight,
   updateHighlightCoordinates,
 } from '@/services/cityReviewService';
+import {geocodeAddress} from '@/services/geocodingService';
 import {CityData, Highlight, HIGHLIGHT_CATEGORIES, HighlightCategory} from '@/types/api';
 import {CityBudgetCard} from '@/components/city/CityBudgetCard';
 import {CityHighlightsMap} from '@/components/city/CityHighlightsMap';
@@ -64,34 +65,6 @@ const CATEGORY_ICONS: Record<HighlightCategory, string> = {
   nightlife: 'moon-line',
   other: 'map-pin-line',
 };
-
-// -- Address geocoding helper -------------------------------------------------
-
-async function geocodeAddress(
-  address: string,
-  cityContext: string
-): Promise<{ lat: number; lon: number } | null> {
-  const key = process.env.EXPO_PUBLIC_LOCATIONIQ_KEY;
-  if (!key || !address.trim()) return null;
-
-  const queries = [`${address.trim()}, ${cityContext}`];
-
-  for (const query of queries) {
-    try {
-      const res = await fetch(
-        `https://us1.locationiq.com/v1/search?key=${key}&q=${encodeURIComponent(query)}&format=json`,
-        { headers: { Accept: 'application/json' } }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.length > 0) {
-          return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-        }
-      }
-    } catch {}
-  }
-  return null;
-}
 
 // -- Main Component -----------------------------------------------------------
 

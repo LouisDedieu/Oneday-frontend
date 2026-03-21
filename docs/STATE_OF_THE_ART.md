@@ -1,6 +1,6 @@
 # Bombo - État des lieux de l'application
 
-> Dernière mise à jour : Mars 2025
+> Dernière mise à jour : Mars 2026
 
 ---
 
@@ -64,8 +64,9 @@ components/                  # Composants réutilisables
 services/                    # Logique métier
 ├── tripService.ts           # CRUD trips
 ├── reviewService.ts         # Édition trips
-├── cityService.ts           # CRUD villes (NEW)
-├── cityReviewService.ts     # Édition villes (NEW)
+├── cityService.ts           # CRUD villes
+├── cityReviewService.ts     # Édition villes
+├── geocodingService.ts      # Géocodage via backend proxy (NEW)
 ├── analysisService.ts       # Analyses IA
 └── savedService.ts          # Collection utilisateur
 
@@ -146,6 +147,9 @@ share-extension/             # Extension de partage iOS/Android
 - `DELETE /review/highlights/{highlightId}` → Supprimer highlight
 - `PATCH /review/city/{cityId}/highlights/reorder` → Réordonner highlights
 - `POST /review/city/{cityId}/sync` → Sync données (supprime non-validés)
+
+### Geocoding (NEW - Mars 2026)
+- `GET /geocoding/search?q=...&limit=...` → Proxy sécurisé vers LocationIQ (clé API cachée)
 
 ---
 
@@ -575,8 +579,11 @@ SEASON_EMOJI = {
 ## 6. Fonctionnalités Avancées
 
 ### Géolocalisation
-- **LocationIQ API** pour geocoding des adresses
-- Normalisation du texte pour l'API (`normalizeTextForLocationIQAPI`)
+- **LocationIQ API** pour geocoding des adresses (proxifié via backend)
+- **Clé API sécurisée** : la clé LocationIQ n'est plus exposée côté client
+- Endpoint backend : `GET /geocoding/search?q=...&limit=...`
+- Service frontend : `geocodingService.ts` avec fonctions `geocodeQuery`, `geocodeAddress`, `geocodeDestination`, `geocodeHighlight`
+- Normalisation du texte pour l'API (`normalizeTextForGeocoding`)
 - Sync automatique des coordonnées au moment du save
 - Lien Google Maps / Apple Maps / Waze depuis chaque spot/highlight
 - **Géocodage contextuel** : inclut toujours ville/pays pour éviter ambiguïtés
@@ -647,10 +654,12 @@ e7f4b5d - Initial commit
 
 ## Configuration Environnement
 
-Variables d'environnement (`.env`) :
+Variables d'environnement (`.env` frontend) :
 - `EXPO_PUBLIC_SUPABASE_URL` - URL Supabase
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY` - Clé publique Supabase
 - `EXPO_PUBLIC_API_BASE` - URL backend FastAPI
 - `EXPO_PUBLIC_TEST_MODE` - Mode test (auto-login)
 - `EXPO_PUBLIC_DEV_MODE` - Mode développement (debug panel)
-- `EXPO_PUBLIC_LOCATIONIQ_KEY` - Clé API LocationIQ
+
+Variables d'environnement (`.env` backend) :
+- `LOCATIONIQ_API_KEY` - Clé API LocationIQ (sécurisée côté serveur)
