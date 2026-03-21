@@ -51,14 +51,19 @@ app/                         # Routes Expo Router
 └── login, reset-password    # Auth
 
 components/                  # Composants réutilisables
-├── city/                    # Composants ville (NEW)
+├── map/                     # Composants map unifiés (REFACTORED Mars 2026)
+│   ├── BaseMap.tsx          # Composant de base MapView
+│   ├── TripMap.tsx          # Wrapper trip avec polyline et markers numérotés
+│   ├── CityMap.tsx          # Wrapper city avec markers colorés et filtrage
+│   ├── types.ts             # Types partagés
+│   └── index.ts             # Exports
+├── city/                    # Composants ville
 │   ├── CategoryFilterChips.tsx
 │   ├── HighlightCard.tsx
 │   ├── HighlightReviewCard.tsx
-│   ├── CityHighlightsMap.tsx
 │   └── CityBudgetCard.tsx
 ├── trip/                    # Composants trip
-│   └── AddCityToTripModal.tsx (NEW)
+│   └── AddCityToTripModal.tsx
 └── ...
 
 services/                    # Logique métier
@@ -98,6 +103,7 @@ share-extension/             # Extension de partage iOS/Android
 14. **Cartes interactives villes** - Visualisation des highlights sur carte
 15. **Intégration Trip-Ville** - Ajouter des villes sauvegardées à un trip
 16. **Navigation iOS 26+** - Support Liquid Glass tabs natifs
+17. **Interaction bidirectionnelle map ↔ liste** - Clic sur marker focus l'item, clic sur item focus le marker
 
 ---
 
@@ -505,17 +511,29 @@ Highlight {
 
 ## 4. Composants Réutilisables
 
-### Composants Ville (NEW - `/components/city/`)
+### Composants Map (REFACTORED - Mars 2026 - `/components/map/`)
+
+| Composant | Description |
+|-----------|-------------|
+| **BaseMap** | Composant de base avec MapView, gestion région, loading, badge approximatif |
+| **TripMap** | Wrapper trip : polyline, markers numérotés, highlight par ville, interaction bidirectionnelle |
+| **CityMap** | Wrapper city : markers colorés par catégorie, filtrage, highlight par activité |
+| **types.ts** | Types partagés : MapMarker, GeocodingResult, CATEGORY_COLORS, etc. |
+
+**Interaction bidirectionnelle (NEW):**
+- **Trip** : Clic sur marker → expand TripStepCard correspondant, et inversement
+- **City** : Clic sur activité → focus marker sur la map, et inversement
+
+### Composants Ville (`/components/city/`)
 
 | Composant | Description |
 |-----------|-------------|
 | **CategoryFilterChips** | Chips horizontaux scrollables pour filtrer par catégorie |
 | **HighlightCard** | Carte highlight en mode lecture avec actions CRUD |
 | **HighlightReviewCard** | Carte highlight en mode review avec validation + drag |
-| **CityHighlightsMap** | Carte interactive avec markers colorés par catégorie |
 | **CityBudgetCard** | Affichage budget avec répartition |
 
-### Composants Trip (NEW - `/components/trip/`)
+### Composants Trip (`/components/trip/`)
 
 | Composant | Description |
 |-----------|-------------|

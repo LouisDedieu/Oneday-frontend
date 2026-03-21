@@ -13,7 +13,7 @@ import DraggableFlatList, {RenderItemParams, ScaleDecorator,} from 'react-native
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useFocusEffect, useLocalSearchParams, useRouter} from 'expo-router';
 import {useTranslation} from 'react-i18next';
-import {InteractiveHeroMap} from '@/components/trip/InteractiveHeroMap';
+import {TripMap} from '@/components/map';
 import {getTrip} from '@/services/tripService';
 import {getUserSavedCities} from '@/services/cityService';
 import {useAuth} from '@/context/AuthContext';
@@ -432,45 +432,59 @@ export default function TripDetailPage() {
 
             {/* HERO MAP — animated height expand/collapse */}
             <Animated.View style={{ width: '100%', height: mapExpandAnim }}>
-              {/* Gradient mask fades out when expanded */}
-              <Animated.View style={{ flex: 1, opacity: mapGradientOpacity }}>
+              {/* Map - single instance */}
+              {destinations.length > 0 ? (
+                <TripMap
+                  destinations={destinations}
+                  highlightedCity={highlightedCity}
+                  onMarkerPress={(city) => setHighlightedCity(city)}
+                />
+              ) : (
+                <View className="w-full h-full relative">
+                  <Image
+                    source={{ uri: trip.thumbnail_url || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800' }}
+                    className="w-full h-full opacity-60"
+                    resizeMode="cover"
+                  />
+                  <View className="absolute inset-0 bg-black/40" />
+                </View>
+              )}
+
+              {/* Fade overlay using actual background - fades out when expanded */}
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: 50,
+                  opacity: mapGradientOpacity,
+                  overflow: 'hidden',
+                }}
+                pointerEvents="none"
+              >
                 <MaskedView
-                  style={{ width: '100%', height: '100%' }}
+                  style={{ flex: 1 }}
                   maskElement={
                     <LinearGradient
-                      colors={['#000', '#000', '#000', 'transparent']}
-                      locations={[0, 0.6, 0.75, 1]}
+                      colors={['transparent', '#000']}
                       style={{ flex: 1 }}
                     />
                   }
                 >
-                  {destinations.length > 0 ? (
-                    <InteractiveHeroMap
-                      destinations={destinations}
-                      highlightedCity={highlightedCity}
-                    />
-                  ) : (
-                    <View className="w-full h-full relative">
-                      <Image
-                        source={{ uri: trip.thumbnail_url || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800' }}
-                        className="w-full h-full opacity-60"
-                        resizeMode="cover"
-                      />
-                      <View className="absolute inset-0 bg-black/40" />
-                    </View>
-                  )}
+                  <ImageBackground
+                    source={require('@/assets/images/bg-gradient.png')}
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      right: 0,
+                      top: -(MAP_DEFAULT_HEIGHT - 50),
+                      height: SCREEN_HEIGHT,
+                    }}
+                    resizeMode="cover"
+                  />
                 </MaskedView>
               </Animated.View>
-
-              {/* Map shown without gradient when expanded */}
-              {isMapExpanded && (
-                <View style={{ position: 'absolute', inset: 0 }}>
-                  <InteractiveHeroMap
-                    destinations={destinations}
-                    highlightedCity={highlightedCity}
-                  />
-                </View>
-              )}
 
               {/* Expand/collapse button */}
               {destinations.length > 0 && (
@@ -672,6 +686,7 @@ export default function TripDetailPage() {
                             daysCount={dest.days_spent || destinationDays.length || 1}
                             spotsCount={spotsCount}
                             days={dayDataArray}
+                            isHighlighted={highlightedCity?.toLowerCase() === dest.city?.toLowerCase()}
                             onExpand={(city) => setHighlightedCity(city)}
                             onViewDetails={
                               savedCityId ? () => router.push(`/(tabs)/trips/city/${savedCityId}`) : undefined

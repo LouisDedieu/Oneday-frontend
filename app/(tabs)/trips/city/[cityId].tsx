@@ -33,7 +33,7 @@ import {
 import {geocodeAddress} from '@/services/geocodingService';
 import {CityData, Highlight, HIGHLIGHT_CATEGORIES, HighlightCategory} from '@/types/api';
 import {CityBudgetCard} from '@/components/city/CityBudgetCard';
-import {CityHighlightsMap} from '@/components/city/CityHighlightsMap';
+import {CityMap} from '@/components/map';
 import {Navbar} from '@/components/navigation/Navbar';
 import {Pill} from '@/components/Pill';
 import {PracticalCard} from '@/components/PracticalCard';
@@ -82,6 +82,7 @@ export default function CityDetailPage() {
   const [selectedMustSee, setSelectedMustSee] = useState<boolean | null>(null);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [approximateCount, setApproximateCount] = useState(0);
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
   // Add highlight state
   const [showAddModal, setShowAddModal] = useState(false);
@@ -492,49 +493,57 @@ export default function CityDetailPage() {
 
       {/* Content */}
       <View style={{ flex: 1 }}>
-        {/* Hero Map with gradient mask */}
+        {/* Hero Map - single instance with gradient overlay */}
         <Animated.View style={{ width: '100%', height: mapExpandAnim }}>
-          <Animated.View style={{ flex: 1, opacity: mapGradientOpacity }}>
+          {/* Map - single instance */}
+          <CityMap
+            highlights={highlights}
+            cityName={city.city_name}
+            country={city.country}
+            cityLat={city.latitude}
+            cityLon={city.longitude}
+            selectedCategories={selectedCategories}
+            highlightedId={highlightedId}
+            onMarkerPress={(id) => setHighlightedId(id)}
+            hideApproximateBadge
+            onApproximateCount={setApproximateCount}
+          />
+
+          {/* Fade overlay using actual background - fades out when expanded */}
+          <Animated.View
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 50,
+              opacity: mapGradientOpacity,
+              overflow: 'hidden',
+            }}
+            pointerEvents="none"
+          >
             <MaskedView
-              style={{ width: '100%', height: '100%' }}
+              style={{ flex: 1 }}
               maskElement={
                 <LinearGradient
-                  colors={['#000', '#000', '#000', 'transparent']}
-                  locations={[0, 0.6, 0.75, 1]}
+                  colors={['transparent', '#000']}
                   style={{ flex: 1 }}
                 />
               }
             >
-              <CityHighlightsMap
-                highlights={highlights}
-                cityName={city.city_name}
-                country={city.country}
-                cityLat={city.latitude}
-                cityLon={city.longitude}
-                selectedCategories={selectedCategories}
-                height={MAP_DEFAULT_HEIGHT}
-                hideApproximateBadge
-                onApproximateCount={setApproximateCount}
+              <ImageBackground
+                source={require('@/assets/images/bg-gradient.png')}
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  top: -(MAP_DEFAULT_HEIGHT - 50),
+                  height: SCREEN_HEIGHT,
+                }}
+                resizeMode="cover"
               />
             </MaskedView>
           </Animated.View>
-
-          {/* Map shown without gradient when expanded */}
-          {isMapExpanded && (
-            <View style={{ position: 'absolute', inset: 0 }}>
-              <CityHighlightsMap
-                highlights={highlights}
-                cityName={city.city_name}
-                country={city.country}
-                cityLat={city.latitude}
-                cityLon={city.longitude}
-                selectedCategories={selectedCategories}
-                height={MAP_EXPANDED_HEIGHT}
-                hideApproximateBadge
-                onApproximateCount={setApproximateCount}
-              />
-            </View>
-          )}
 
           {/* Approximate badge + Expand/collapse button row */}
           <View
@@ -703,8 +712,24 @@ export default function CityDetailPage() {
 
               {/* TicketCard List */}
               <View style={{ gap: 12 }}>
-                {filteredHighlights.map((highlight) => (
-                  <View key={highlight.id} style={{ flexDirection: 'row', alignItems: 'stretch', gap: 8 }}>
+                {filteredHighlights.map((highlight) => {
+                  const isHighlighted = highlightedId === highlight.id;
+                  return (
+                  <TouchableOpacity
+                    key={highlight.id}
+                    activeOpacity={0.8}
+                    onPress={() => setHighlightedId(isHighlighted ? null : highlight.id)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'stretch',
+                      gap: 8,
+                      borderRadius: 12,
+                      borderWidth: isHighlighted ? 1.5 : 0,
+                      borderColor: isHighlighted ? 'rgba(82, 72, 212, 0.6)' : 'transparent',
+                      backgroundColor: isHighlighted ? 'rgba(82, 72, 212, 0.15)' : 'transparent',
+                      padding: isHighlighted ? 4 : 0,
+                    }}
+                  >
                     <View style={{ flex: 1 }}>
                       <TicketCard
                         category={(highlight.category || 'other') as CategoryType}
@@ -763,8 +788,9 @@ export default function CityDetailPage() {
                         <Icon name="delete-bin-line" size={17} color="rgba(255, 144, 144, 0.4)" />
                       </TouchableOpacity>
                     </View>
-                  </View>
-                ))}
+                  </TouchableOpacity>
+                );
+                })}
 
                 {filteredHighlights.length === 0 && (
                   <View className="empty-state">

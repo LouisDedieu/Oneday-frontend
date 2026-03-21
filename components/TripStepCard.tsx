@@ -58,6 +58,8 @@ export interface TripStepCardProps {
   spotsCount: number;
   days: DayData[];
   defaultExpanded?: boolean;
+  /** When true, the card expands automatically (for map → list interaction) */
+  isHighlighted?: boolean;
   onViewDetails?: () => void;
   onExpand?: (cityName: string | null) => void; // null = collapsed
   style?: StyleProp<ViewStyle>;
@@ -302,12 +304,22 @@ export function TripStepCard({
                                spotsCount,
                                days,
                                defaultExpanded = false,
+                               isHighlighted = false,
                                onViewDetails,
                                onExpand,
                                style,
                              }: TripStepCardProps) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(defaultExpanded);
+
+  // Auto-expand when highlighted (map → list interaction)
+  useEffect(() => {
+    if (isHighlighted && !expanded) {
+      setExpanded(true);
+      onExpand?.(cityName);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHighlighted]);
 
   // Calculate max total spots for bar normalization
   const maxTotal = Math.max(...days.map((d) => d.categories.reduce((sum, c) => sum + c.count, 0)));
