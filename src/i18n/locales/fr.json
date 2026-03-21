@@ -485,7 +485,7 @@
       "internal": "Une erreur interne s'est produite",
       "unavailable": "Service temporairement indisponible",
       "database": "Erreur de base de données",
-      "externalService": "Erreur d'un service externe"
+      "externalServiceError": "Erreur d'un service externe"
     }
   }
 }
