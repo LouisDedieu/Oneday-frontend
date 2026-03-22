@@ -366,22 +366,6 @@ export default function Login() {
               )}
             </View>
           )}
-
-          <TouchableOpacity
-            className={`flex-row items-center justify-center gap-2 rounded-[8px] h-10 mt-1 ${resending ? 'opacity-60' : 'bg-accent/20 border border-accent/40'}`}
-            onPress={handleResend}
-            disabled={resending}
-            activeOpacity={0.8}
-          >
-            {resending ? (
-              <Loader size={20} color="#a1a1aa" />
-            ) : (
-              <>
-                <Icon name="refresh-line" size={16} color="#8b8bf5" />
-                <Text className="text-[#8b8bf5] text-[13px] font-medium font-dmsans">{t('auth.resendConfirmationEmail')}</Text>
-              </>
-            )}
-          </TouchableOpacity>
           
           {/* Error banner */}
           {error && (
