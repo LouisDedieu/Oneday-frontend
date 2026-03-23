@@ -28,6 +28,7 @@ import { useAuth } from '@/context/AuthContext';
 import { deleteTrip } from '@/services/tripService';
 import { deleteCity } from '@/services/cityService';
 import { getUserSavedItems, SavedItem } from '@/services/savedService';
+import { CreateContentFAB } from '@/components/CreateContentFAB';
 import Icon from "react-native-remix-icon";
 
 // -- Filter type (without 'all') ----------------------------------------------
@@ -44,6 +45,28 @@ export default function SavedPage() {
 
   const [filter, setFilter] = useState<FilterType>('trip');
   const [activeTabIndex, setActiveTabIndex] = useState(0);
+  const [isFabExpanded, setIsFabExpanded] = useState(false);
+
+  // Header title animation
+  const headerOpacity = useRef(new Animated.Value(1)).current;
+  const headerTranslateX = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(headerOpacity, {
+        toValue: isFabExpanded ? 0 : 1,
+        duration: 200,
+        easing: Easing.bezier(0.4, 0, 0.2, 1),
+        useNativeDriver: true,
+      }),
+      Animated.timing(headerTranslateX, {
+        toValue: isFabExpanded ? -20 : 0,
+        duration: 200,
+        easing: Easing.bezier(0.4, 0, 0.2, 1),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [isFabExpanded]);
 
   // Cache items per filter
   const [tripItems, setTripItems] = useState<SavedItem[]>([]);
@@ -247,7 +270,13 @@ export default function SavedPage() {
       {/* Header */}
       <View style={{ paddingTop: insets.top + 16, paddingHorizontal: 16 }}>
         {/* Title */}
-        <View className="flex-row mb-4">
+        <Animated.View
+          className="flex-row mb-4"
+          style={{
+            opacity: headerOpacity,
+            transform: [{ translateX: headerTranslateX }],
+          }}
+        >
           <Text className="section-title">
             {t('trips.your')}{' '}
           </Text>
@@ -261,7 +290,7 @@ export default function SavedPage() {
           >
             {`${t('trips.collection')}`}
           </Text>
-        </View>
+        </Animated.View>
 
         {/* Navbar */}
         <Navbar
@@ -349,6 +378,17 @@ export default function SavedPage() {
             </View>
           ) : null
         }
+      />
+
+      {/* Create Content FAB */}
+      <CreateContentFAB
+        onExpandChange={setIsFabExpanded}
+        onContentCreated={() => {
+          setTripLoaded(false);
+          setCityLoaded(false);
+          setPage(1);
+          loadItems(1, false, filter);
+        }}
       />
     </ImageBackground>
   );

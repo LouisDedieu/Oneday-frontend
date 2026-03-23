@@ -23,6 +23,12 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const keyboardHeight = useSharedValue(0);
   const { triggerAnalysis } = useAnalysis();
   const { unreadCount } = useNotifications();
+  const [hideTabBar, setHideTabBar] = useState(false);
+
+  // Expose hideTabBar setter globally
+  useEffect(() => {
+    (global as any).setTabBarVisible = (visible: boolean) => setHideTabBar(!visible);
+  }, []);
 
   // Build tabs with notification badge
   const tabs: NavbarTab[] = useMemo(() => [
@@ -88,9 +94,12 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           right: 0,
           paddingHorizontal: 16,
           paddingBottom: insets.bottom + 8,
+          opacity: hideTabBar ? 0 : 1,
+          zIndex: hideTabBar ? -1 : 100,
         },
         animatedStyle,
       ]}
+      pointerEvents={hideTabBar ? 'none' : 'auto'}
     >
       <TabBar
         tabs={tabs}
