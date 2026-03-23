@@ -16,6 +16,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {LinearGradient} from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -29,6 +31,7 @@ import {
   type HighlightUpdatePayload,
   updateHighlight,
   updateHighlightCoordinates,
+  reorderHighlights,
 } from '@/services/cityReviewService';
 import {geocodeAddress} from '@/services/geocodingService';
 import {CityData, Highlight, HIGHLIGHT_CATEGORIES, HighlightCategory} from '@/types/api';
@@ -102,6 +105,11 @@ export default function CityDetailPage() {
   const [editForm, setEditForm] = useState<HighlightUpdatePayload>({});
   const [editAddrStatus, setEditAddrStatus] = useState<null | 'loading' | 'found' | 'not_found'>(null);
   const [editAddrCoords, setEditAddrCoords] = useState<{ lat: number; lon: number } | null>(null);
+
+  // Reorder state
+  const [isReordering, setIsReordering] = useState(false);
+  const [pendingHighlights, setPendingHighlights] = useState<Highlight[]>([]);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
 
   // Map animation
   const SCREEN_HEIGHT = Dimensions.get('window').height;
@@ -422,6 +430,41 @@ export default function CityDetailPage() {
     setSelectedMustSee((prev) => (prev === true ? null : true));
   }, []);
 
+  // Reorder handlers
+  const enterReorderMode = useCallback(() => {
+    setPendingHighlights([...highlights]);
+    setIsReordering(true);
+  }, [highlights]);
+
+  const cancelReorderMode = useCallback(() => {
+    setIsReordering(false);
+    setPendingHighlights([]);
+  }, []);
+
+  const confirmReorder = useCallback(async () => {
+    if (!cityId) return;
+    setIsSavingOrder(true);
+    try {
+      await reorderHighlights(cityId, pendingHighlights.map((h, idx) => ({ id: h.id, order: idx + 1 })));
+      // Update local state
+      setCity((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          city_highlights: pendingHighlights,
+          highlights: pendingHighlights,
+        };
+      });
+      setIsReordering(false);
+      setPendingHighlights([]);
+    } catch (err) {
+      console.error('Reorder error:', err);
+      Alert.alert(t('cityDetail.error'), t('cityDetail.cannotReorderPoints'));
+    } finally {
+      setIsSavingOrder(false);
+    }
+  }, [cityId, pendingHighlights, t]);
+
   // Get budget and practical info
   const budget = city?.city_budgets?.[0] || city?.budget;
   const practicalInfo = city?.city_practical_info?.[0] || city?.practical_info;
@@ -466,6 +509,7 @@ export default function CityDetailPage() {
   const vibeTag = city.vibe_tags?.[0] || city.vibe || null;
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <ImageBackground
       source={require('@/assets/images/bg-gradient.png')}
       className="flex-1"
@@ -507,6 +551,23 @@ export default function CityDetailPage() {
             onMarkerPress={(id) => setHighlightedId(id)}
             hideApproximateBadge
             onApproximateCount={setApproximateCount}
+            onPersistCoordinates={async (highlightId, lat, lon) => {
+              try {
+                await updateHighlightCoordinates(highlightId, lat, lon);
+                setCity((prev) => {
+                  if (!prev) return prev;
+                  const highlights = prev.city_highlights || prev.highlights || [];
+                  return {
+                    ...prev,
+                    city_highlights: highlights.map((h) =>
+                      h.id === highlightId ? { ...h, latitude: lat, longitude: lon } : h
+                    ),
+                  };
+                });
+              } catch (err) {
+                console.error('Failed to persist highlight coordinates:', err);
+              }
+            }}
           />
 
           {/* Fade overlay using actual background - fades out when expanded */}
@@ -675,8 +736,40 @@ export default function CityDetailPage() {
           {/* Highlights Tab */}
           {activeTab === 'highlights' && (
             <View style={{ paddingHorizontal: 16 }}>
-              {/* Category Filters with SecondaryButton */}
-              {showFilters && (
+              {/* Header with Reorder button */}
+              {highlights.length > 1 && (
+                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 12 }}>
+                  {!isReordering ? (
+                    <SecondaryButton
+                      title={t('tripDetail.reorder')}
+                      variant="square"
+                      size="sm"
+                      leftIcon="draggable"
+                      onPress={enterReorderMode}
+                    />
+                  ) : (
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <SecondaryButton
+                        title={t('tripDetail.cancel')}
+                        variant="square"
+                        size="sm"
+                        onPress={cancelReorderMode}
+                      />
+                      <SecondaryButton
+                        title={t('tripDetail.ok')}
+                        leftIcon="check-line"
+                        variant="square"
+                        size="sm"
+                        active
+                        onPress={confirmReorder}
+                        disabled={isSavingOrder}
+                      />
+                    </View>
+                  )}
+                </View>
+              )}
+              {/* Category Filters with SecondaryButton - hide in reorder mode */}
+              {showFilters && !isReordering && (
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -710,108 +803,166 @@ export default function CityDetailPage() {
                 </ScrollView>
               )}
 
-              {/* TicketCard List */}
-              <View style={{ gap: 12 }}>
-                {filteredHighlights.map((highlight) => {
-                  const isHighlighted = highlightedId === highlight.id;
-                  return (
-                  <TouchableOpacity
-                    key={highlight.id}
-                    activeOpacity={0.8}
-                    onPress={() => setHighlightedId(isHighlighted ? null : highlight.id)}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'stretch',
-                      gap: 8,
-                      borderRadius: 12,
-                      borderWidth: isHighlighted ? 1.5 : 0,
-                      borderColor: isHighlighted ? 'rgba(82, 72, 212, 0.6)' : 'transparent',
-                      backgroundColor: isHighlighted ? 'rgba(82, 72, 212, 0.15)' : 'transparent',
-                      padding: isHighlighted ? 4 : 0,
-                    }}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <TicketCard
-                        category={(highlight.category || 'other') as CategoryType}
-                        title={highlight.name}
-                        price={
-                          highlight.price_range === 'free' || highlight.price_range === 'gratuit'
-                            ? 'free'
-                            : highlight.price_range
-                              ? parseInt(highlight.price_range.replace(/[^0-9]/g, '')) || 0
-                              : 0
-                        }
-                        tags={highlight.subtype ? [highlight.subtype] : []}
-                        description={highlight.description || t('cityDetail.noDescription')}
-                        tip={highlight.tips}
-                        isMustSee={highlight.is_must_see}
-                        colorScheme={CATEGORY_TO_COLOR_SCHEME[highlight.category || 'other']}
-                      />
-                    </View>
-                    {/* Action buttons column */}
-                    <View style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly' }}>
+              {/* TicketCard List or Reorder List */}
+              {isReordering ? (
+                /* Reorder mode with DraggableFlatList */
+                <DraggableFlatList
+                  data={pendingHighlights}
+                  keyExtractor={(item) => item.id}
+                  onDragEnd={({ data }) => setPendingHighlights(data)}
+                  scrollEnabled={false}
+                  renderItem={({ item: highlight, drag, isActive }: RenderItemParams<Highlight>) => (
+                    <ScaleDecorator activeScale={0.95}>
                       <TouchableOpacity
-                        onPress={() => handleOpenMap(highlight)}
+                        activeOpacity={0.7}
+                        onLongPress={drag}
+                        delayLongPress={100}
+                        disabled={isActive}
                         style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 16,
-                          justifyContent: 'center',
+                          flexDirection: 'row',
                           alignItems: 'center',
+                          backgroundColor: isActive ? 'rgba(30, 26, 100, 0.8)' : 'rgba(30, 26, 100, 0.55)',
+                          borderRadius: 12,
+                          borderWidth: 1,
+                          borderColor: isActive ? 'rgba(82, 72, 212, 0.5)' : 'rgba(255, 255, 255, 0.09)',
+                          paddingVertical: 12,
+                          paddingHorizontal: 14,
+                          marginBottom: 8,
                         }}
                       >
-                        {/* Inverser horizontalement l'icône en appliquant scaleX: -1 */}
-                        <Icon name="navigation-line" size={17} color="#1084FE" style={{ transform: [{ scaleX: -1 }] }} />
+                        <View style={{
+                          width: 32, height: 32, borderRadius: 8,
+                          backgroundColor: CATEGORY_TO_COLOR_SCHEME[highlight.category || 'other'] === 'restaurant' ? '#f97316' :
+                                           CATEGORY_TO_COLOR_SCHEME[highlight.category || 'other'] === 'culture' ? '#8b5cf6' :
+                                           CATEGORY_TO_COLOR_SCHEME[highlight.category || 'other'] === 'nature' ? '#22c55e' :
+                                           CATEGORY_TO_COLOR_SCHEME[highlight.category || 'other'] === 'shopping' ? '#ec4899' :
+                                           CATEGORY_TO_COLOR_SCHEME[highlight.category || 'other'] === 'nightlife' ? '#6366f1' : '#52525b',
+                          alignItems: 'center', justifyContent: 'center', marginRight: 12,
+                        }}>
+                          <Icon name={CATEGORY_ICONS[highlight.category || 'other'] as any} size={16} color="#fff" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontFamily: 'Righteous', fontSize: 14, color: '#fff' }}>
+                            {highlight.name}
+                          </Text>
+                          {highlight.subtype && (
+                            <Text style={{ fontFamily: 'DMSans', fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
+                              {highlight.subtype}
+                            </Text>
+                          )}
+                        </View>
+                        <View style={{ padding: 8 }}>
+                          <Icon name="draggable" size={18} color={isActive ? '#5248D4' : 'rgba(255,255,255,0.45)'} />
+                        </View>
                       </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => handleOpenEdit(highlight)}
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 16,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <Icon name="pencil-line" size={17} color="rgba(255, 255, 255, 0.4)" />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => handleDeleteHighlight(highlight.id)}
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 16,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <Icon name="delete-bin-line" size={17} color="rgba(255, 144, 144, 0.4)" />
-                      </TouchableOpacity>
-                    </View>
-                  </TouchableOpacity>
-                );
-                })}
-
-                {filteredHighlights.length === 0 && (
-                  <View className="empty-state">
-                    <Icon name={"information-2-fill"} size={32} color="#a1a1aa" style={{ opacity: 1 }} />
-                    <Text className="text-sm text-zinc-400 mt-2 font-dmsans">{t('cityDetail.noPointsFound')}</Text>
-                  </View>
-                )}
-              </View>
-
-              {/* Add highlight button */}
-              <View style={{ marginTop: 16, marginBottom: 16 }}>
-                <PrimaryButton
-                  title={t('cityDetail.addHighlight')}
-                  leftIcon="add-line"
-                  color="purple"
-                  size="sm"
-                  fullWidth
-                  onPress={() => setShowAddModal(true)}
-                  style={{ opacity: 0.8 }}
+                    </ScaleDecorator>
+                  )}
                 />
-              </View>
+              ) : (
+                <View style={{ gap: 12 }}>
+                  {filteredHighlights.map((highlight) => {
+                    const isHighlighted = highlightedId === highlight.id;
+                    return (
+                    <TouchableOpacity
+                      key={highlight.id}
+                      activeOpacity={0.8}
+                      onPress={() => setHighlightedId(isHighlighted ? null : highlight.id)}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'stretch',
+                        gap: 8,
+                        borderRadius: 12,
+                        borderWidth: isHighlighted ? 1.5 : 0,
+                        borderColor: isHighlighted ? 'rgba(82, 72, 212, 0.6)' : 'transparent',
+                        backgroundColor: isHighlighted ? 'rgba(82, 72, 212, 0.15)' : 'transparent',
+                        padding: isHighlighted ? 4 : 0,
+                      }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <TicketCard
+                          category={(highlight.category || 'other') as CategoryType}
+                          title={highlight.name}
+                          price={
+                            highlight.price_range === 'free' || highlight.price_range === 'gratuit'
+                              ? 'free'
+                              : highlight.price_range
+                                ? parseInt(highlight.price_range.replace(/[^0-9]/g, '')) || 0
+                                : 0
+                          }
+                          tags={highlight.subtype ? [highlight.subtype] : []}
+                          description={highlight.description || t('cityDetail.noDescription')}
+                          tip={highlight.tips}
+                          isMustSee={highlight.is_must_see}
+                          colorScheme={CATEGORY_TO_COLOR_SCHEME[highlight.category || 'other']}
+                        />
+                      </View>
+                      {/* Action buttons column */}
+                      <View style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly' }}>
+                        <TouchableOpacity
+                          onPress={() => handleOpenMap(highlight)}
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
+                        >
+                          {/* Inverser horizontalement l'icône en appliquant scaleX: -1 */}
+                          <Icon name="navigation-line" size={17} color="#1084FE" style={{ transform: [{ scaleX: -1 }] }} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => handleOpenEdit(highlight)}
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Icon name="pencil-line" size={17} color="rgba(255, 255, 255, 0.4)" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => handleDeleteHighlight(highlight.id)}
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Icon name="delete-bin-line" size={17} color="rgba(255, 144, 144, 0.4)" />
+                        </TouchableOpacity>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                  })}
+
+                  {filteredHighlights.length === 0 && (
+                    <View className="empty-state">
+                      <Icon name={"information-2-fill"} size={32} color="#a1a1aa" style={{ opacity: 1 }} />
+                      <Text className="text-sm text-zinc-400 mt-2 font-dmsans">{t('cityDetail.noPointsFound')}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* Add highlight button - hide in reorder mode */}
+              {!isReordering && (
+                <View style={{ marginTop: 16, marginBottom: 16 }}>
+                  <PrimaryButton
+                    title={t('cityDetail.addHighlight')}
+                    leftIcon="add-line"
+                    color="purple"
+                    size="sm"
+                    fullWidth
+                    onPress={() => setShowAddModal(true)}
+                    style={{ opacity: 0.8 }}
+                  />
+                </View>
+              )}
             </View>
           )}
 
@@ -871,6 +1022,7 @@ export default function CityDetailPage() {
         submitLabel={t('cityDetail.save')}
       />
     </ImageBackground>
+    </GestureHandlerRootView>
   );
 }
 

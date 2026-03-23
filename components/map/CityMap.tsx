@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { View, Text } from 'react-native';
 import { Marker, Callout } from 'react-native-maps';
 import { Highlight, HighlightCategory } from '@/types/api';
-import { updateHighlightCoordinates } from '@/services/cityReviewService';
 import { geocodeHighlight as geocodeHighlightService } from '@/services/geocodingService';
 import { BaseMap, BaseMapRef } from './BaseMap';
 import {
@@ -34,6 +33,8 @@ interface CityMapProps {
   onApproximateCount?: (count: number) => void;
   /** Hide the approximate location badge */
   hideApproximateBadge?: boolean;
+  /** Callback to persist coordinates (use for spots, omit to use default highlight persistence) */
+  onPersistCoordinates?: (highlightId: string, lat: number, lon: number) => Promise<void>;
 }
 
 export function CityMap({
@@ -47,6 +48,7 @@ export function CityMap({
   onMarkerPress,
   onApproximateCount,
   hideApproximateBadge = false,
+  onPersistCoordinates,
 }: CityMapProps) {
   const [markers, setMarkers] = useState<CityMarker[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,8 +121,8 @@ export function CityMap({
             });
 
             // Persist high confidence coordinates
-            if (result.confidence === 'high') {
-              updateHighlightCoordinates(
+            if (result.confidence === 'high' && onPersistCoordinates) {
+              onPersistCoordinates(
                 highlight.id,
                 result.coords[0],
                 result.coords[1]
