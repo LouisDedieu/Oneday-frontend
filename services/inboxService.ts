@@ -20,12 +20,15 @@ import i18n from '@/src/i18n/index';
 export type JobStatus = 'pending' | 'downloading' | 'analyzing' | 'done' | 'error';
 export type EntityType = 'trip' | 'city';
 export type Platform = 'tiktok' | 'instagram' | 'unknown';
+export type ContentType = 'video' | 'carousel';
 
 export interface InboxJob {
   jobId: string;
   tripId: string | null;
   cityId: string | null;
   entityType: EntityType;
+  contentType?: ContentType;
+  imageCount?: number;
   title: string;
   sourceUrl: string;
   platform: Platform;
@@ -101,6 +104,7 @@ export function isJobInProgress(status: JobStatus): boolean {
 
 export function mapJobToCardProps(job: InboxJob): JobCardDisplayProps {
   const isCity = job.entityType === 'city';
+  const isCarousel = job.contentType === 'carousel';
   const relativeTime = formatRelativeTime(job.createdAt);
 
   // Error status
@@ -139,28 +143,30 @@ export function mapJobToCardProps(job: InboxJob): JobCardDisplayProps {
   // Done - City
   if (isCity) {
     const highlightsText = job.highlightsCount ? `${job.highlightsCount} ${i18n.t('jobs.places')}` : '';
+    const contentInfo = isCarousel && job.imageCount ? `${job.imageCount} ${i18n.t('jobs.images')}` : '';
     return {
       status: 'done',
       pillLabel: i18n.t('jobs.done'),
       pillBackgroundColor: CARD_COLORS.pillDone,
       pillTextColor: CARD_COLORS.pillTextDone,
       cardBackgroundColor: CARD_COLORS.cardDone,
-      iconLabel: i18n.t('jobs.city'),
+      iconLabel: isCarousel ? i18n.t('jobs.carousel') : i18n.t('jobs.city'),
       iconLabelBackgroundColor: CARD_COLORS.iconCity,
-      subtitle: [highlightsText, relativeTime].filter(Boolean).join(' · '),
+      subtitle: [contentInfo, highlightsText, relativeTime].filter(Boolean).join(' · '),
     };
   }
 
   // Done - Trip
+  const contentInfo = isCarousel && job.imageCount ? `${job.imageCount} ${i18n.t('jobs.images')}` : '';
   return {
     status: 'trip',
     pillLabel: i18n.t('jobs.done'),
     pillBackgroundColor: CARD_COLORS.pillDone,
     pillTextColor: CARD_COLORS.pillTextDone,
     cardBackgroundColor: CARD_COLORS.cardTrip,
-    iconLabel: i18n.t('jobs.trip'),
+    iconLabel: isCarousel ? i18n.t('jobs.carousel') : i18n.t('jobs.trip'),
     iconLabelBackgroundColor: CARD_COLORS.iconTrip,
-    subtitle: relativeTime,
+    subtitle: [contentInfo, relativeTime].filter(Boolean).join(' · '),
   };
 }
 
@@ -196,6 +202,8 @@ export function createOptimisticJob(url: string): InboxJob {
     tripId: null,
     cityId: null,
     entityType: 'trip',
+    contentType: 'video',
+    imageCount: undefined,
     title: url,
     sourceUrl: url,
     platform: detectPlatform(url),

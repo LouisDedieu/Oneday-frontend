@@ -242,6 +242,8 @@ function InboxJobCard({ job, onPress, onDelete, animIndex }: InboxJobCardProps) 
           title={job.title}
           subtitle={cardProps.subtitle}
           url={job.sourceUrl}
+          contentType={job.contentType}
+          imageCount={job.imageCount}
           pillLabel={cardProps.pillLabel}
           pillBackgroundColor={cardProps.pillBackgroundColor}
           pillTextColor={cardProps.pillTextColor}

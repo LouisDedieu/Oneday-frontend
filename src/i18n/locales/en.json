@@ -117,6 +117,8 @@
     "error": "Error",
     "city": "City",
     "trip": "Trip",
+    "carousel": "Carousel",
+    "images": "images",
     "places": "Places",
     "processing": "Processing...",
     "anErrorOccurred": "An error occurred",

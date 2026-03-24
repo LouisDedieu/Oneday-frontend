@@ -3,6 +3,8 @@ export interface AnalysisResponse {
   trip_id: string | null;
   city_id: string | null;
   entity_type: EntityType;
+  content_type?: ContentType;
+  image_count?: number;
   duration_seconds: number;
   source_url: string;
   raw_json: TripData | CityData;
@@ -15,6 +17,9 @@ export interface AnalysisResponse {
 
 // ── Entity Type ─────────────────────────────────────────────────────────────
 export type EntityType = 'trip' | 'city';
+
+// ── Content Type ─────────────────────────────────────────────────────────────
+export type ContentType = 'video' | 'carousel';
 
 // ── Highlight Categories ────────────────────────────────────────────────────
 export type HighlightCategory = 'food' | 'culture' | 'nature' | 'shopping' | 'nightlife' | 'other';
@@ -89,6 +94,8 @@ export interface CityData {
   longitude?: number;
   source_url?: string;
   thumbnail_url?: string;
+  content_type?: ContentType;
+  image_count?: number;
   content_creator_handle?: string;
   content_creator_links?: string[];
   highlights?: Highlight[];
@@ -122,6 +129,8 @@ export interface TripData {
   vibe?: string;
   duration_days?: number;
   best_season?: string;
+  content_type?: ContentType;
+  image_count?: number;
   destinations?: Destination[];
   itinerary?: ItineraryDay[];
   logistics?: LogisticsItem[];

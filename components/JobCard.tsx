@@ -29,6 +29,10 @@ export interface JobCardProps {
   subtitle?: string;
   /** Source URL shown at the bottom of the text block */
   url?: string;
+  /** Content type for icon display */
+  contentType?: 'video' | 'carousel';
+  /** Number of images for carousel content */
+  imageCount?: number;
   /** Label inside the status pill (e.g. "Terminé ✓") */
   pillLabel: string;
   /** Background colour of the status pill */
@@ -133,10 +137,12 @@ interface IconColumnProps {
   status: JobCardStatus;
   iconLabel?: string;
   iconLabelBackgroundColor?: string;
+  contentType?: 'video' | 'carousel';
 }
 
-function IconColumn({ status, iconLabel, iconLabelBackgroundColor }: IconColumnProps) {
+function IconColumn({ status, iconLabel, iconLabelBackgroundColor, contentType = 'video' }: IconColumnProps) {
   const isLoading = status === 'loading';
+  const isCarousel = contentType === 'carousel';
 
   return (
     <BlurWrapper blur={isLoading} intensity={5} style={{ width: 76 }}>
@@ -150,8 +156,10 @@ function IconColumn({ status, iconLabel, iconLabelBackgroundColor }: IconColumnP
         }}
       >
         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-          {status === 'done'    && <Icon name={'building-fill'} size={42} color={'#306A9F'} />}
-          {status === 'trip'    && <Icon name={'signpost-fill'} size={42} color={'#656E57'} />}
+          {status === 'done'    && isCarousel && <Icon name={'gallery-line'} size={42} color={'#306A9F'} />}
+          {status === 'done'    && !isCarousel && <Icon name={'building-fill'} size={42} color={'#306A9F'} />}
+          {status === 'trip'    && isCarousel && <Icon name={'gallery-line'} size={42} color={'#656E57'} />}
+          {status === 'trip'    && !isCarousel && <Icon name={'signpost-fill'} size={42} color={'#656E57'} />}
           {status === 'loading' && <LoadingIcon />}
           {status === 'error'   && <ErrorIcon />}
         </View>
@@ -191,6 +199,8 @@ export function JobCard({
                           title,
                           subtitle,
                           url,
+                          contentType,
+                          imageCount,
                           pillLabel,
                           pillBackgroundColor,
                           pillTextColor,
@@ -235,6 +245,7 @@ export function JobCard({
           status={status}
           iconLabel={iconLabel}
           iconLabelBackgroundColor={iconLabelBackgroundColor}
+          contentType={contentType}
         />
 
         {/* Text block — blurred on loading */}
