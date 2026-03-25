@@ -13,14 +13,14 @@
 
 import { apiFetch, apiPost, apiDelete } from '@/lib/api';
 import { JobCardStatus } from '@/components/JobCard';
+import { ContentType } from '@/types/api';
 import i18n from '@/src/i18n/index';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type JobStatus = 'pending' | 'downloading' | 'analyzing' | 'done' | 'error';
 export type EntityType = 'trip' | 'city';
-export type Platform = 'tiktok' | 'instagram' | 'unknown';
-export type ContentType = 'video' | 'carousel';
+export type Platform = 'tiktok' | 'instagram' | 'blog' | 'unknown';
 
 export interface InboxJob {
   jobId: string;
@@ -29,6 +29,8 @@ export interface InboxJob {
   entityType: EntityType;
   contentType?: ContentType;
   imageCount?: number;
+  wordCount?: number;
+  estimatedReadTime?: number;
   title: string;
   sourceUrl: string;
   platform: Platform;
@@ -69,6 +71,7 @@ export const CARD_COLORS = {
 
   iconCity: '#306A9F',
   iconTrip: '#656E57',
+  iconBlog: '#14b8a6',
   iconLoading: '#5F57C1',
 } as const;
 
@@ -77,6 +80,8 @@ export const CARD_COLORS = {
 export function detectPlatform(url: string): Platform {
   if (/tiktok\.com/i.test(url)) return 'tiktok';
   if (/instagram\.com/i.test(url)) return 'instagram';
+  if (/medium\.com|substack\.com|wordpress\.com|blogspot\.com/i.test(url)) return 'blog';
+  if (/\/blog\/|\/article\//i.test(url)) return 'blog';
   return 'unknown';
 }
 
@@ -105,7 +110,18 @@ export function isJobInProgress(status: JobStatus): boolean {
 export function mapJobToCardProps(job: InboxJob): JobCardDisplayProps {
   const isCity = job.entityType === 'city';
   const isCarousel = job.contentType === 'carousel';
+  const isBlog = job.contentType === 'blog';
   const relativeTime = formatRelativeTime(job.createdAt);
+
+  const getReadTime = () => {
+    if (job.wordCount) {
+      return `${Math.ceil(job.wordCount / 200)} ${i18n.t('jobs.minRead')}`;
+    }
+    if (job.estimatedReadTime) {
+      return `${job.estimatedReadTime} ${i18n.t('jobs.minRead')}`;
+    }
+    return '';
+  };
 
   // Error status
   if (job.status === 'error') {
@@ -143,29 +159,39 @@ export function mapJobToCardProps(job: InboxJob): JobCardDisplayProps {
   // Done - City
   if (isCity) {
     const highlightsText = job.highlightsCount ? `${job.highlightsCount} ${i18n.t('jobs.places')}` : '';
-    const contentInfo = isCarousel && job.imageCount ? `${job.imageCount} ${i18n.t('jobs.images')}` : '';
+    let contentInfo = '';
+    if (isBlog) {
+      contentInfo = getReadTime();
+    } else if (isCarousel && job.imageCount) {
+      contentInfo = `${job.imageCount} ${i18n.t('jobs.images')}`;
+    }
     return {
       status: 'done',
       pillLabel: i18n.t('jobs.done'),
       pillBackgroundColor: CARD_COLORS.pillDone,
       pillTextColor: CARD_COLORS.pillTextDone,
       cardBackgroundColor: CARD_COLORS.cardDone,
-      iconLabel: isCarousel ? i18n.t('jobs.carousel') : i18n.t('jobs.city'),
-      iconLabelBackgroundColor: CARD_COLORS.iconCity,
+      iconLabel: isBlog ? i18n.t('jobs.article') : (isCarousel ? i18n.t('jobs.carousel') : i18n.t('jobs.city')),
+      iconLabelBackgroundColor: isBlog ? CARD_COLORS.iconBlog : CARD_COLORS.iconCity,
       subtitle: [contentInfo, highlightsText, relativeTime].filter(Boolean).join(' · '),
     };
   }
 
   // Done - Trip
-  const contentInfo = isCarousel && job.imageCount ? `${job.imageCount} ${i18n.t('jobs.images')}` : '';
+  let contentInfo = '';
+  if (isBlog) {
+    contentInfo = getReadTime();
+  } else if (isCarousel && job.imageCount) {
+    contentInfo = `${job.imageCount} ${i18n.t('jobs.images')}`;
+  }
   return {
     status: 'trip',
     pillLabel: i18n.t('jobs.done'),
     pillBackgroundColor: CARD_COLORS.pillDone,
     pillTextColor: CARD_COLORS.pillTextDone,
     cardBackgroundColor: CARD_COLORS.cardTrip,
-    iconLabel: isCarousel ? i18n.t('jobs.carousel') : i18n.t('jobs.trip'),
-    iconLabelBackgroundColor: CARD_COLORS.iconTrip,
+    iconLabel: isBlog ? i18n.t('jobs.article') : (isCarousel ? i18n.t('jobs.carousel') : i18n.t('jobs.trip')),
+    iconLabelBackgroundColor: isBlog ? CARD_COLORS.iconBlog : CARD_COLORS.iconTrip,
     subtitle: [contentInfo, relativeTime].filter(Boolean).join(' · '),
   };
 }
@@ -194,19 +220,35 @@ export async function startAnalysis(url: string, userId: string): Promise<void> 
 }
 
 /**
+ * Détecte le type de contenu à partir de l'URL
+ */
+export function detectContentType(url: string): ContentType {
+  const platform = detectPlatform(url);
+  if (platform === 'blog') return 'blog';
+  if (/\/p\/|\/reel\/|instagram\.com/i.test(url)) {
+    return 'carousel';
+  }
+  return 'video';
+}
+
+/**
  * Crée un job optimiste pour l'affichage immédiat
  */
 export function createOptimisticJob(url: string): InboxJob {
+  const platform = detectPlatform(url);
+  const contentType = detectContentType(url);
   return {
     jobId: `optimistic-${Date.now()}`,
     tripId: null,
     cityId: null,
     entityType: 'trip',
-    contentType: 'video',
+    contentType,
     imageCount: undefined,
+    wordCount: undefined,
+    estimatedReadTime: undefined,
     title: url,
     sourceUrl: url,
-    platform: detectPlatform(url),
+    platform,
     createdAt: new Date().toISOString(),
     status: 'pending',
     progressPct: 0,

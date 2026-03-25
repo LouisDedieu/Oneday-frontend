@@ -107,7 +107,8 @@
     "whoops": "Whoops!",
     "tiktok": "TikTok",
     "instagramReels": "Instagram Reels",
-    "linkSubtitle": "Paste a TikTok or Instagram link, the complete itinerary will be extracted in a few seconds."
+    "blogArticles": "Blog articles",
+    "linkSubtitle": "Paste a TikTok, Instagram, or blog article link, the complete itinerary will be extracted in a few seconds."
   },
   "jobs": {
     "pending": "Waiting...",
@@ -118,6 +119,8 @@
     "city": "City",
     "trip": "Trip",
     "carousel": "Carousel",
+    "article": "Article",
+    "minRead": "min read",
     "images": "images",
     "places": "Places",
     "processing": "Processing...",
@@ -464,6 +467,7 @@
     "departure": "Departure",
     "arrival": "Arrival",
     "plane": "Flight",
+    "avion": "Airplane",
     "train": "Train",
     "bus": "Bus",
     "car": "Car",
@@ -520,7 +524,8 @@
       "internal": "An internal error occurred",
       "unavailable": "Service temporarily unavailable",
       "database": "Database error",
-      "externalServiceError": "External service error"
+      "externalServiceError": "External service error",
+      "high_demand": "AI model is experiencing high demand. Please try again in a few minutes ⏱️"
     }
   }
 }

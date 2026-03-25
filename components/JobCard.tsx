@@ -30,7 +30,7 @@ export interface JobCardProps {
   /** Source URL shown at the bottom of the text block */
   url?: string;
   /** Content type for icon display */
-  contentType?: 'video' | 'carousel';
+  contentType?: 'video' | 'carousel' | 'blog';
   /** Number of images for carousel content */
   imageCount?: number;
   /** Label inside the status pill (e.g. "Terminé ✓") */
@@ -137,12 +137,13 @@ interface IconColumnProps {
   status: JobCardStatus;
   iconLabel?: string;
   iconLabelBackgroundColor?: string;
-  contentType?: 'video' | 'carousel';
+  contentType?: 'video' | 'carousel' | 'blog';
 }
 
 function IconColumn({ status, iconLabel, iconLabelBackgroundColor, contentType = 'video' }: IconColumnProps) {
   const isLoading = status === 'loading';
   const isCarousel = contentType === 'carousel';
+  const isBlog = contentType === 'blog';
 
   return (
     <BlurWrapper blur={isLoading} intensity={5} style={{ width: 76 }}>
@@ -156,10 +157,12 @@ function IconColumn({ status, iconLabel, iconLabelBackgroundColor, contentType =
         }}
       >
         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+          {status === 'done'    && isBlog && <Icon name={'file-text-line'} size={42} color={'#14b8a6'} />}
           {status === 'done'    && isCarousel && <Icon name={'gallery-line'} size={42} color={'#306A9F'} />}
-          {status === 'done'    && !isCarousel && <Icon name={'building-fill'} size={42} color={'#306A9F'} />}
+          {status === 'done'    && !isBlog && !isCarousel && <Icon name={'building-fill'} size={42} color={'#306A9F'} />}
+          {status === 'trip'    && isBlog && <Icon name={'file-text-line'} size={42} color={'#14b8a6'} />}
           {status === 'trip'    && isCarousel && <Icon name={'gallery-line'} size={42} color={'#656E57'} />}
-          {status === 'trip'    && !isCarousel && <Icon name={'signpost-fill'} size={42} color={'#656E57'} />}
+          {status === 'trip'    && !isBlog && !isCarousel && <Icon name={'signpost-fill'} size={42} color={'#656E57'} />}
           {status === 'loading' && <LoadingIcon />}
           {status === 'error'   && <ErrorIcon />}
         </View>

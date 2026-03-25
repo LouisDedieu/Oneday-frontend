@@ -105,7 +105,8 @@
     "whoops": "Oups !",
     "tiktok": "TikTok",
     "instagramReels": "Instagram Reels",
-    "linkSubtitle": "Collez un lien TikTok ou Instagram, l'itinéraire complet sera extrait en quelques secondes."
+    "blogArticles": "Articles de blog",
+    "linkSubtitle": "Collez un lien TikTok, Instagram ou article de blog, l'itinéraire complet sera extrait en quelques secondes."
   },
   "jobs": {
     "pending": "En attente...",
@@ -116,6 +117,8 @@
     "city": "Ville",
     "trip": "Trip",
     "carousel": "Carrousel",
+    "article": "Article",
+    "minRead": "min de lecture",
     "images": "images",
     "places": "Lieux",
     "processing": "Traitement en cours...",
@@ -462,6 +465,7 @@
     "departure": "Départ",
     "arrival": "Arrivée",
     "plane": "Vol",
+    "avion": "Avion",
     "train": "Train",
     "bus": "Bus",
     "car": "Voiture",
@@ -518,7 +522,8 @@
       "internal": "Une erreur interne s'est produite",
       "unavailable": "Service temporairement indisponible",
       "database": "Erreur de base de données",
-      "externalServiceError": "Erreur d'un service externe"
+      "externalServiceError": "Erreur d'un service externe",
+      "high_demand": "Le modèle d'IA est surchargé. Réessayez dans quelques minutes ⏱️"
     }
   }
 }

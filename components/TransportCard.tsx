@@ -21,11 +21,12 @@ interface TransportCardProps {
   legs: TransportLeg[];
 }
 
-const TRANSPORT_KEYS = ['plane', 'train', 'bus', 'car', 'ferry', 'walk', 'taxi', 'metro', 'bike', 'boat'] as const;
+const TRANSPORT_KEYS = ['plane', 'avion', 'train', 'bus', 'car', 'ferry', 'walk', 'taxi', 'metro', 'bike', 'boat'] as const;
 type TransportKey = typeof TRANSPORT_KEYS[number];
 
 const TRANSPORT_COLORS: Record<TransportKey, string> = {
   plane: '#60a5fa',
+  avion: '#60a5fa',
   train: '#34d399',
   bus: '#fb923c',
   car: '#a855f7',
@@ -39,6 +40,7 @@ const TRANSPORT_COLORS: Record<TransportKey, string> = {
 
 const TRANSPORT_ICONS: Record<TransportKey, string> = {
   plane: 'plane-line',
+  avion: 'plane-line',
   train: 'train-line',
   bus: 'bus-line',
   car: 'car-line',

@@ -153,6 +153,13 @@ function EmptyState({ onAnalysisStarted, isSubmitting }: EmptyStateProps) {
             <Icon name="instagram-line" color={colors.social} size={17} />
             <Text className="font-dmsans-medium text-micro text-social">{t('inbox.instagramReels')}</Text>
           </TouchableOpacity>
+
+          <View className="w-px h-4.5 bg-divider" />
+
+          <TouchableOpacity className="row-center" activeOpacity={0.7}>
+            <Icon name="pages-line" color={colors.social} size={17} />
+            <Text className="font-dmsans-medium text-micro text-social">{t('inbox.blogArticles')}</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </ImageBackground>

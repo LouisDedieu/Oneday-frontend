@@ -13,13 +13,15 @@ export interface AnalysisResponse {
     city_name: string;
     existing_highlights_count: number;
   };
+  word_count?: number;
+  estimated_read_time?: number;
 }
 
 // ── Entity Type ─────────────────────────────────────────────────────────────
 export type EntityType = 'trip' | 'city';
 
 // ── Content Type ─────────────────────────────────────────────────────────────
-export type ContentType = 'video' | 'carousel';
+export type ContentType = 'video' | 'carousel' | 'blog';
 
 // ── Highlight Categories ────────────────────────────────────────────────────
 export type HighlightCategory = 'food' | 'culture' | 'nature' | 'shopping' | 'nightlife' | 'other';
@@ -96,6 +98,8 @@ export interface CityData {
   thumbnail_url?: string;
   content_type?: ContentType;
   image_count?: number;
+  word_count?: number;
+  estimated_read_time?: number;
   content_creator_handle?: string;
   content_creator_links?: string[];
   highlights?: Highlight[];
@@ -131,6 +135,8 @@ export interface TripData {
   best_season?: string;
   content_type?: ContentType;
   image_count?: number;
+  word_count?: number;
+  estimated_read_time?: number;
   destinations?: Destination[];
   itinerary?: ItineraryDay[];
   logistics?: LogisticsItem[];

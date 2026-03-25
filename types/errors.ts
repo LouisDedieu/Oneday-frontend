@@ -29,6 +29,7 @@ export const ERROR_CATEGORY_MAP: Record<string, ErrorCategory> = {
   VIDEO: 'video',
   URL: 'video',
   ANALYSIS: 'video',
+  MODEL: 'server',
   TRIP: 'trip',
   DESTINATION: 'destination',
   SHARE: 'share',

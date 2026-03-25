@@ -62,6 +62,7 @@ interface DbDay {
   id: string;
   day_number: number;
   location: string | null;
+  destination_id: string | null;
   theme: string | null;
   accommodation_name: string | null;
   accommodation_type: string | null;
@@ -818,9 +819,14 @@ export default function TripDetailPage() {
                       {!isEditingOrder && (
                         <View style={{ gap: 12 }}>
                           {destinations.map((dest, i) => {
-                            const destinationDays = days.filter(
-                              (day) => day.location?.toLowerCase().includes(dest.city?.toLowerCase() || '')
-                            );
+                            // Filter by destination_id first, fallback to location match for older trips
+                            let destinationDays = days.filter((day) => day.destination_id === dest.id);
+                            // Fallback: for trips without destination_id, use location matching
+                            if (destinationDays.length === 0) {
+                              destinationDays = days.filter(
+                                (day) => day.location?.toLowerCase().includes(dest.city?.toLowerCase() || '')
+                              );
+                            }
                             const spotsCount = destinationDays.reduce((acc, day) => acc + (day.spots?.length || 0), 0);
                             const dayDataArray: DayData[] = destinationDays.map((day) => {
                               const categoryMap: Record<string, number> = {};

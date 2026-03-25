@@ -388,7 +388,6 @@ function DayReviewCard({ day, isExpanded, onToggle, onValidatedChange, onSpotUpd
     <View className="rounded-xl overflow-hidden" style={{ borderWidth: 1, borderColor: cardBorder, backgroundColor: cardBg }}>
       <View className="flex-row">
         {/* Barre latérale colorée */}
-        <View style={{ width: 2, backgroundColor: barColor }} />
 
         <View className="flex-min-width">
           {/* Header */}
