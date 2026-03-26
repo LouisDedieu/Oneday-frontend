@@ -277,40 +277,13 @@ export default function CityDetailPage() {
 
     setSavingEdit(true);
     try {
-      const addressChanged = editForm.address !== editingHighlight.address;
-
-      let coords = editAddrCoords;
-      if (addressChanged && editForm.address?.trim() && !coords && editAddrStatus !== 'not_found') {
-        const cityContext = [city?.city_name, city?.country].filter(Boolean).join(', ');
-        coords = await geocodeAddress(editForm.address.trim(), cityContext);
-      }
-
       await updateHighlight(editingHighlight.id, editForm);
 
-      if (addressChanged && coords) {
-        await updateHighlightCoordinates(editingHighlight.id, coords.lat, coords.lon);
+      // Reload city to get updated coordinates from backend
+      if (cityId) {
+        const updatedCity = await getCity(cityId);
+        setCity(updatedCity);
       }
-
-      setCity((prev) => {
-        if (!prev) return prev;
-        const updateHighlights = (hs: Highlight[]) =>
-          hs.map((h) =>
-            h.id === editingHighlight.id
-              ? {
-                  ...h,
-                  ...editForm,
-                  ...(addressChanged && coords
-                    ? { latitude: coords.lat, longitude: coords.lon }
-                    : {}),
-                }
-              : h
-          );
-        return {
-          ...prev,
-          city_highlights: updateHighlights(prev.city_highlights || []),
-          highlights: updateHighlights(prev.highlights || []),
-        };
-      });
 
       setShowEditModal(false);
       setEditingHighlight(null);
@@ -321,7 +294,7 @@ export default function CityDetailPage() {
     } finally {
       setSavingEdit(false);
     }
-  }, [editingHighlight, editForm, editAddrCoords, editAddrStatus, city]);
+  }, [editingHighlight, editForm, editAddrCoords, editAddrStatus, cityId]);
 
   // Delete highlight
   const handleDeleteHighlight = useCallback(async (highlightId: string) => {
