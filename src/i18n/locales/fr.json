@@ -108,6 +108,11 @@
     "blogArticles": "Articles de blog",
     "linkSubtitle": "Collez un lien TikTok, Instagram ou article de blog, l'itinéraire complet sera extrait en quelques secondes."
   },
+  "notTravel": {
+    "title": "Cette vidéo ne semble pas être liée aux voyages",
+    "subtitle": "Essayez avec une vidéo de voyage ou de guide de ville",
+    "back": "Retour à l'accueil"
+  },
   "jobs": {
     "pending": "En attente...",
     "downloading": "Téléchargement...",

@@ -68,6 +68,14 @@ const colorPresets = {
     shadow: 'rgba(92, 107, 61, 0.64)',
     dropShadow: 'rgba(61, 74, 45, 0.2)',
   },
+  // Red variant (for destructive actions)
+  red: {
+    stroke: ['#ef4444', '#991b1b', '#dc2626'] as const,
+    fill: ['#dc2626', '#991b1b'] as const,
+    fillAngle: 124.86,
+    shadow: 'rgba(220, 38, 38, 0.64)',
+    dropShadow: 'rgba(153, 27, 27, 0.2)',
+  },
   // Inactive/muted variant (used when active=false)
   inactive: {
     stroke: ['#4a4a5c', '#2a2a3c', '#3a3a4c'] as const,

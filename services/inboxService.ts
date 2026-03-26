@@ -213,6 +213,20 @@ export async function deleteInboxJob(jobId: string): Promise<void> {
 }
 
 /**
+ * Trouve le job associé à une entité (city ou trip)
+ */
+export async function findJobByEntityId(
+  entityType: 'city' | 'trip',
+  entityId: string
+): Promise<InboxJob | null> {
+  const jobs = await fetchInboxJobs();
+  return jobs.find((job) => {
+    if (entityType === 'city') return job.cityId === entityId;
+    return job.tripId === entityId;
+  }) || null;
+}
+
+/**
  * Lance une nouvelle analyse pour une URL
  */
 export async function startAnalysis(url: string, userId: string): Promise<void> {

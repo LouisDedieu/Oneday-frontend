@@ -42,6 +42,18 @@ export interface DbTrip {
   content_creator_handle: string | null;
   destination: string;
   days: DbDay[];
+  job_id?: string;
+}
+
+/**
+ * Detect if a trip result is not travel-related (video was not about travel)
+ */
+export function isNotTravelTrip(trip: DbTrip): boolean {
+  return (
+    trip.trip_title === 'N/A' ||
+    trip.destination === 'N/A' ||
+    trip.days.length === 0
+  );
 }
 
 export type SpotUpdatePayload = Partial<Pick<
@@ -214,4 +226,10 @@ export async function updateDestination(
   payload: UpdateDestinationPayload
 ): Promise<void> {
   await apiPatch(`/trips/destinations/${destId}`, payload);
+}
+
+// ── Delete trip ────────────────────────────────────────────────────────────────
+
+export async function deleteTrip(tripId: string): Promise<void> {
+  await apiDelete(`/trips/${tripId}`);
 }

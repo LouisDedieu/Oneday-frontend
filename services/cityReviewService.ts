@@ -19,6 +19,18 @@ export interface DbCity {
   highlights_count: number;
   category_counts: Record<string, number>;
   budget: CityBudget | null;
+  job_id?: string;
+}
+
+/**
+ * Detect if a city result is not travel-related (video was not about travel)
+ */
+export function isNotTravelCity(city: DbCity): boolean {
+  return (
+    city.city_title === 'N/A' ||
+    city.city_name === 'N/A' ||
+    city.country === 'N/A'
+  );
 }
 
 /**
@@ -147,4 +159,11 @@ export async function setHighlightCategory(
   category: HighlightCategory
 ): Promise<void> {
   await updateHighlight(highlightId, { category });
+}
+
+/**
+ * Delete a city
+ */
+export async function deleteCity(cityId: string): Promise<void> {
+  await apiDelete(`/cities/${cityId}`);
 }

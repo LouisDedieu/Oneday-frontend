@@ -110,6 +110,11 @@
     "blogArticles": "Blog articles",
     "linkSubtitle": "Paste a TikTok, Instagram, or blog article link, the complete itinerary will be extracted in a few seconds."
   },
+  "notTravel": {
+    "title": "This video doesn't seem to be about travel",
+    "subtitle": "Try with a travel or city guide video",
+    "back": "Back to inbox"
+  },
   "jobs": {
     "pending": "Waiting...",
     "downloading": "Downloading...",

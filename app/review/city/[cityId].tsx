@@ -35,10 +35,13 @@ import {
   syncCityData,
   setHighlightValidated,
   createHighlight,
+  deleteCity,
+  isNotTravelCity,
   type DbCity,
   type HighlightUpdatePayload,
   type CreateHighlightPayload,
 } from '@/services/cityReviewService';
+import { deleteInboxJob, findJobByEntityId } from '@/services/inboxService';
 import { Highlight, HighlightCategory, HIGHLIGHT_CATEGORIES } from '@/types/api';
 import { HighlightReviewCard } from '@/components/city/HighlightReviewCard';
 import { Button } from '@/components/Button';
@@ -399,6 +402,50 @@ export default function CityReviewPage() {
       <View className="center-content gap-4">
         <Text className="text-body-muted">{t('review.cityNotFound')}</Text>
         <Button onPress={() => router.navigate('/(tabs)')}>{t('review.back')}</Button>
+      </View>
+    );
+  }
+
+  if (isNotTravelCity(city)) {
+    const handleBackAndDelete = async () => {
+      try {
+        const job = await findJobByEntityId('city', city.id);
+        if (job) {
+          await deleteInboxJob(job.jobId);
+        }
+        await deleteCity(city.id);
+      } catch (err) {
+        console.warn('Failed to delete city (may already be deleted):', err);
+      }
+      router.replace('/(tabs)');
+    };
+
+    return (
+      <View className="flex-1" style={{ backgroundColor: '#0F0E23' }}>
+        <View
+          className="flex-1 center-content px-8"
+          style={{ paddingTop: insets.top + 32, paddingBottom: insets.bottom + 32 }}
+        >
+          <View className="bg-surface-secondary rounded-full p-6 mb-6">
+            <View className="relative">
+              <Icon name="global-line" size={64} color="#8C92B5" />
+              <View className="absolute -top-1 -right-1">
+                <Icon name="close-line" size={24} color="#ef4444" />
+              </View>
+            </View>
+          </View>
+          <Text className="text-title text-center text-text-primary font-righteous mb-3">
+            {t('notTravel.title')}
+          </Text>
+          <Text className="text-body text-center text-text-secondary mb-8">
+            {t('notTravel.subtitle')}
+          </Text>
+          <PrimaryButton
+            title={t('notTravel.back')}
+            onPress={handleBackAndDelete}
+            leftIcon="arrow-left-line"
+          />
+        </View>
       </View>
     );
   }
