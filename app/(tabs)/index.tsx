@@ -198,7 +198,7 @@ interface InboxJobCardProps {
 
 function InboxJobCard({ job, onPress, onDelete, animIndex }: InboxJobCardProps) {
   const isNavigable = job.status === 'done' && (job.tripId || job.cityId);
-  const isDeletable = (job.status === 'done' || job.status === 'error') && (job.tripId || job.cityId);
+  const isDeletable = job.status === 'error' || (job.status === 'done' && (job.tripId || job.cityId));
   const isInteractive = isNavigable || isDeletable;
   const cardProps = mapJobToCardProps(job);
 

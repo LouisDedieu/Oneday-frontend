@@ -106,15 +106,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     switch (data.type) {
       case 'analysis_complete':
-        // Naviguer vers l'écran de review du trip ou de la city
-        if (data.entity_type === 'city' && data.entity_id) {
-          router.push(`/review/${data.entity_id}?type=city` as never);
-        } else if (data.entity_type === 'trip' && data.entity_id) {
-          router.push(`/review/${data.entity_id}` as never);
-        } else {
-          // Fallback: aller à l'inbox
-          router.push('/' as never);
-        }
+        // Le backend sauvegarde automatiquement, aller directement aux trips
+        router.push('/trips' as never);
         break;
 
       case 'analysis_error':
