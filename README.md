@@ -1,6 +1,13 @@
-# Bombo
+# Oneday
 
-Application mobile React Native / Expo.
+> Transforme des vidéos de voyage (TikTok, Instagram, articles de blog) en itinéraires prêts à suivre, en quelques secondes.
+
+Application mobile cross-platform **React Native / Expo**, avec un backend **FastAPI** et un pipeline d'analyse IA. Colle un lien ou partage une vidéo depuis TikTok/Instagram, l'itinéraire complet est extrait jour par jour, avec carte, budget et infos pratiques.
+
+<p align="center">
+  <img src="docs/media/oneday-cover-1.jpg" alt="Oneday — coller un lien, itinéraire jour par jour et détail d'une ville" width="100%" />
+  <img src="docs/media/oneday-cover-2.jpg" alt="Oneday — partage depuis Instagram via la Share Extension, carte de l'itinéraire et collection de voyages" width="100%" />
+</p>
 
 ## Get started (Development)
 
